@@ -10,6 +10,8 @@ from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.organization import Organization
+    from app.models.user import User
+    from app.models.user_role import UserRole
 
 
 class Role(Base, TimestampMixin):
@@ -37,3 +39,12 @@ class Role(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="roles")
+    user_roles: Mapped[list["UserRole"]] = relationship(
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
+    users: Mapped[list["User"]] = relationship(
+        secondary="user_roles",
+        back_populates="roles",
+        viewonly=True,
+    )

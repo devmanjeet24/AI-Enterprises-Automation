@@ -10,6 +10,8 @@ from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.organization import Organization
+    from app.models.role import Role
+    from app.models.user_role import UserRole
 
 
 class User(Base, TimestampMixin):
@@ -29,8 +31,18 @@ class User(Base, TimestampMixin):
         index=True,
     )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="users")
+    user_roles: Mapped[list["UserRole"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    roles: Mapped[list["Role"]] = relationship(
+        secondary="user_roles",
+        back_populates="users",
+        viewonly=True,
+    )
