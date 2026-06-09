@@ -6,11 +6,15 @@ from pydantic import BaseModel, ValidationError
 from app.schemas.validators import (
     StrippedEmail,
     StrippedFirstName,
-    StrippedLastName,
+    StrippedOptionalDepartmentSlug,
+    StrippedOptionalDescription,
     StrippedOrganizationName,
+    StrippedOrganizationSlug,
     StrippedPassword,
+    normalize_optional_slug,
     strip_and_require_non_empty,
     strip_optional_non_empty,
+    strip_optional_text,
     strip_password,
 )
 
@@ -27,8 +31,20 @@ class SampleOptionalOrgModel(BaseModel):
     organization_name: StrippedOrganizationName = None
 
 
+class SampleOptionalOrgSlugModel(BaseModel):
+    organization_slug: StrippedOrganizationSlug = None
+
+
 class SampleEmailModel(BaseModel):
     email: StrippedEmail
+
+
+class SampleDepartmentSlugModel(BaseModel):
+    slug: StrippedOptionalDepartmentSlug = None
+
+
+class SampleDescriptionModel(BaseModel):
+    description: StrippedOptionalDescription = None
 
 
 @pytest.mark.parametrize(
@@ -58,6 +74,12 @@ def test_strip_optional_non_empty_rejects_whitespace_only_when_provided(value: s
 @pytest.mark.parametrize("value", [None])
 def test_strip_optional_non_empty_allows_none(value: None) -> None:
     assert strip_optional_non_empty(value, field_label="Organization name") is None
+
+
+def test_strip_optional_text_trims_and_blank_becomes_none() -> None:
+    assert strip_optional_text("  hello  ") == "hello"
+    assert strip_optional_text("   ") is None
+    assert strip_optional_text(None) is None
 
 
 def test_strip_password_rejects_whitespace_only() -> None:
@@ -101,3 +123,50 @@ def test_stripped_email_trims_before_validation() -> None:
 
     with pytest.raises(ValidationError):
         SampleEmailModel.model_validate({"email": None})
+
+
+def test_stripped_email_rejects_invalid_format() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        SampleEmailModel.model_validate({"email": "not-an-email"})
+
+    assert "valid email" in str(exc_info.value).lower()
+
+
+def test_stripped_organization_slug_normalizes_value() -> None:
+    model = SampleOptionalOrgSlugModel.model_validate({"organization_slug": "  Demo Corp  "})
+    assert model.organization_slug == "demo-corp"
+
+
+def test_stripped_organization_slug_rejects_whitespace_only() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        SampleOptionalOrgSlugModel.model_validate({"organization_slug": "   "})
+
+    assert "Organization slug cannot be empty or contain only whitespace" in str(exc_info.value)
+
+
+def test_stripped_organization_slug_rejects_invalid_slug() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        SampleOptionalOrgSlugModel.model_validate({"organization_slug": "!!!"})
+
+    assert "Organization slug must contain at least one letter or number" in str(exc_info.value)
+
+
+def test_normalize_optional_slug_rejects_symbols_only() -> None:
+    with pytest.raises(ValueError, match="Department slug must contain at least one letter or number"):
+        normalize_optional_slug("!!!", field_label="Department slug", max_length=50)
+
+
+def test_stripped_department_slug_normalizes_and_rejects_blank() -> None:
+    model = SampleDepartmentSlugModel.model_validate({"slug": "  Platform Team  "})
+    assert model.slug == "platform-team"
+
+    with pytest.raises(ValidationError):
+        SampleDepartmentSlugModel.model_validate({"slug": "   "})
+
+
+def test_stripped_description_trims_and_clears_blank_values() -> None:
+    model = SampleDescriptionModel.model_validate({"description": "  Some text  "})
+    assert model.description == "Some text"
+
+    model = SampleDescriptionModel.model_validate({"description": "   "})
+    assert model.description is None

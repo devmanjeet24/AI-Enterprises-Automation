@@ -9,7 +9,10 @@ from app.db.base import Base
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.department import Department
+    from app.models.permission import Permission
     from app.models.role import Role
+    from app.models.team import Team
     from app.models.user import User
 
 
@@ -30,3 +33,6 @@ class Organization(Base, TimestampMixin):
 
     users: Mapped[list["User"]] = relationship(back_populates="organization")
     roles: Mapped[list["Role"]] = relationship(back_populates="organization")
+    departments: Mapped[list["Department"]] = relationship(back_populates="organization")
+    teams: Mapped[list["Team"]] = relationship(back_populates="organization")
+    permissions: Mapped[list["Permission"]] = relationship(back_populates="organization")

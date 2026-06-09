@@ -1,11 +1,11 @@
 """Pydantic schemas for authentication request/response bodies."""
 
-import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, model_validator
 
+from app.core.text import slugify
 from app.schemas.validators import (
     StrippedEmail,
     StrippedFirstName,
@@ -14,14 +14,6 @@ from app.schemas.validators import (
     StrippedOrganizationSlug,
     StrippedPassword,
 )
-
-
-def slugify(value: str) -> str:
-    """Turn a display name into a URL-safe slug."""
-    slug = value.strip().lower()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_-]+", "-", slug)
-    return slug.strip("-")[:100]
 
 
 class UserRegisterRequest(BaseModel):

@@ -23,8 +23,8 @@ from app.schemas.auth import (
     TokenResponse,
     UserMeResponse,
     UserRegisterRequest,
-    slugify,
 )
+from app.core.text import slugify
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

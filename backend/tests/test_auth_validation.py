@@ -69,6 +69,29 @@ def test_register_rejects_empty_string_required_fields(client: TestClient) -> No
     assert "cannot be empty or contain only whitespace" in response.text
 
 
+def test_register_rejects_invalid_email_format(client: TestClient) -> None:
+    payload = _register_payload(email="not-an-email")
+    response = client.post("/api/v1/auth/register", json=payload)
+
+    assert response.status_code == 422
+    assert "valid email" in response.text.lower()
+
+
+def test_register_rejects_invalid_organization_slug(client: TestClient) -> None:
+    unique = uuid.uuid4().hex[:8]
+    payload = {
+        "email": f"slug.test.{unique}@example.com",
+        "password": "securepass123",
+        "first_name": "Valid",
+        "last_name": "User",
+        "organization_slug": "!!!",
+    }
+    response = client.post("/api/v1/auth/register", json=payload)
+
+    assert response.status_code == 422
+    assert "Organization slug must contain at least one letter or number" in response.text
+
+
 def test_register_trims_valid_inputs_before_persisting(client: TestClient) -> None:
     unique = uuid.uuid4().hex[:8]
     payload = _register_payload(
@@ -131,3 +154,13 @@ def test_login_rejects_whitespace_only_password(client: TestClient) -> None:
 
     assert response.status_code == 422
     assert "Password cannot be empty or contain only whitespace" in response.text
+
+
+def test_login_rejects_invalid_email_format(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/auth/login",
+        data={"username": "not-an-email", "password": "securepass123"},
+    )
+
+    assert response.status_code == 422
+    assert "valid email" in response.text.lower()
