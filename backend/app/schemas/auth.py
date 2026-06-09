@@ -4,7 +4,16 @@ import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
+
+from app.schemas.validators import (
+    StrippedEmail,
+    StrippedFirstName,
+    StrippedLastName,
+    StrippedOrganizationName,
+    StrippedOrganizationSlug,
+    StrippedPassword,
+)
 
 
 def slugify(value: str) -> str:
@@ -16,17 +25,17 @@ def slugify(value: str) -> str:
 
 
 class UserRegisterRequest(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
-    first_name: str = Field(min_length=1, max_length=100)
-    last_name: str = Field(min_length=1, max_length=100)
-    organization_name: str | None = Field(default=None, max_length=255)
-    organization_slug: str | None = Field(default=None, max_length=100)
+    email: StrippedEmail
+    password: StrippedPassword
+    first_name: StrippedFirstName
+    last_name: StrippedLastName
+    organization_name: StrippedOrganizationName = None
+    organization_slug: StrippedOrganizationSlug = None
 
     @model_validator(mode="after")
     def validate_organization_fields(self) -> "UserRegisterRequest":
-        has_name = self.organization_name is not None and self.organization_name.strip()
-        has_slug = self.organization_slug is not None and self.organization_slug.strip()
+        has_name = self.organization_name is not None
+        has_slug = self.organization_slug is not None
 
         if has_name and has_slug:
             raise ValueError(
@@ -39,6 +48,17 @@ class UserRegisterRequest(BaseModel):
                 "or organization_slug to join an existing one."
             )
         return self
+
+
+class LoginRequest(BaseModel):
+    """Validated credentials for the OAuth2 login form."""
+
+    email: StrippedEmail
+    password: StrippedPassword
+
+    @classmethod
+    def from_form(cls, username: str, password: str) -> "LoginRequest":
+        return cls.model_validate({"email": username, "password": password})
 
 
 class TokenResponse(BaseModel):

@@ -5,17 +5,26 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import CurrentUser
+from app.api.validation import raise_validation_http_exception
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.organization import Organization
 from app.models.role import Role
 from app.models.user import User
 from app.models.user_role import UserRole
-from app.schemas.auth import RoleSummary, TokenResponse, UserMeResponse, UserRegisterRequest, slugify
+from app.schemas.auth import (
+    LoginRequest,
+    RoleSummary,
+    TokenResponse,
+    UserMeResponse,
+    UserRegisterRequest,
+    slugify,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -109,7 +118,7 @@ def register(
             )
 
         organization = Organization(
-            name=payload.organization_name.strip(),
+            name=payload.organization_name,
             slug=slug,
         )
         db.add(organization)
@@ -149,8 +158,8 @@ def register(
         organization_id=organization.id,
         email=payload.email,
         password_hash=hash_password(payload.password),
-        first_name=payload.first_name.strip(),
-        last_name=payload.last_name.strip(),
+        first_name=payload.first_name,
+        last_name=payload.last_name,
     )
     db.add(user)
     db.flush()
@@ -169,9 +178,14 @@ def login(
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenResponse:
     """Login with email (username field) and password. Returns a JWT."""
+    try:
+        credentials = LoginRequest.from_form(form_data.username, form_data.password)
+    except ValidationError as exc:
+        raise_validation_http_exception(exc)
+
     user = db.scalar(
         select(User)
-        .where(User.email == form_data.username)
+        .where(User.email == credentials.email)
         .options(selectinload(User.roles), selectinload(User.organization))
     )
     if user is None or user.password_hash is None:
@@ -180,7 +194,7 @@ def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if not verify_password(form_data.password, user.password_hash):
+    if not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
