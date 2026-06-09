@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.role import Role
     from app.models.user import User
 
 
@@ -28,3 +29,4 @@ class Organization(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     users: Mapped[list["User"]] = relationship(back_populates="organization")
+    roles: Mapped[list["Role"]] = relationship(back_populates="organization")
