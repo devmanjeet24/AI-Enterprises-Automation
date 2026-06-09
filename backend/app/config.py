@@ -1,6 +1,7 @@
 from functools import lru_cache
+from urllib.parse import urlparse
 
-from pydantic import computed_field
+from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,19 +23,22 @@ class Settings(BaseSettings):
 
     api_v1_prefix: str = "/api/v1"
 
-    postgres_user: str = "postgres"
-    postgres_password: str = ""
-    postgres_host: str = "localhost"
-    postgres_port: int = 5432
-    postgres_db: str = "ai_enterprise"
+    database_url: str
+
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        """Ensure SQLAlchemy uses the psycopg2 driver with Neon-style URLs."""
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+psycopg2://", 1)
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return value
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def database_url(self) -> str:
-        return (
-            f"postgresql+psycopg2://{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        )
+    def database_name(self) -> str:
+        return urlparse(self.database_url).path.lstrip("/") or "postgres"
 
 
 @lru_cache

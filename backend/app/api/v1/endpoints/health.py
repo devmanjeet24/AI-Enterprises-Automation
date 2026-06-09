@@ -31,5 +31,5 @@ def database_health_check() -> dict[str, str]:
 
     return {
         "status": "ok",
-        "database": get_settings().postgres_db,
+        "database": get_settings().database_name,
     }
