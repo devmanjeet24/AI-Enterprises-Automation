@@ -18,6 +18,7 @@ from app.schemas.validators import (
     StrippedOptionalDocumentType,
     StrippedOptionalKnowledgeDocumentTitle,
 )
+from app.services.document_processor import process_document
 from app.services.document_service import (
     delete_document,
     get_document_or_404,
@@ -89,6 +90,22 @@ def get_document(
         document_id=document_id,
         organization_id=current_user.organization_id,
     )
+
+
+@router.post("/{document_id}/process", response_model=KnowledgeDocumentResponse)
+def process_organization_document(
+    document_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_permission(DOCUMENTS_WRITE))],
+    db: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> KnowledgeDocument:
+    """Extract text from a PDF and update document processing metadata."""
+    document = get_document_or_404(
+        db,
+        document_id=document_id,
+        organization_id=current_user.organization_id,
+    )
+    return process_document(db, settings, document)
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
