@@ -10,6 +10,8 @@ from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.department import Department
+    from app.models.document_chunk import DocumentChunk
+    from app.models.knowledge_document import KnowledgeDocument
     from app.models.permission import Permission
     from app.models.role import Role
     from app.models.team import Team
@@ -36,3 +38,7 @@ class Organization(Base, TimestampMixin):
     departments: Mapped[list["Department"]] = relationship(back_populates="organization")
     teams: Mapped[list["Team"]] = relationship(back_populates="organization")
     permissions: Mapped[list["Permission"]] = relationship(back_populates="organization")
+    knowledge_documents: Mapped[list["KnowledgeDocument"]] = relationship(
+        back_populates="organization",
+    )
+    document_chunks: Mapped[list["DocumentChunk"]] = relationship(back_populates="organization")

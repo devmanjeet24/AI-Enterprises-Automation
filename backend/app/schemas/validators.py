@@ -245,6 +245,22 @@ StrippedOptionalLastName = Annotated[
     BeforeValidator(make_optional_strip_validator("Last name", max_length=100)),
 ]
 
+# --- Knowledge document fields ---
+
+StrippedKnowledgeDocumentTitle = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Document title")),
+    Field(max_length=255),
+]
+StrippedOptionalKnowledgeDocumentTitle = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Document title", max_length=255)),
+]
+StrippedOptionalDocumentType = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Document type", max_length=50)),
+]
+
 # --- Shared aliases for future modules (Organizations API) ---
 
 StrippedName = Annotated[

@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.knowledge_document import KnowledgeDocument
     from app.models.organization import Organization
     from app.models.role import Role
     from app.models.user_role import UserRole
@@ -45,4 +46,7 @@ class User(Base, TimestampMixin):
         secondary="user_roles",
         back_populates="users",
         viewonly=True,
+    )
+    uploaded_documents: Mapped[list["KnowledgeDocument"]] = relationship(
+        back_populates="uploaded_by",
     )
