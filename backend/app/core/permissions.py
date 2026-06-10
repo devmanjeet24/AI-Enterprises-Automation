@@ -39,6 +39,11 @@ DOCUMENTS_DELETE = "documents:delete"
 
 KNOWLEDGE_QUERY = "knowledge:query"
 
+EMPLOYEES_READ = "employees:read"
+EMPLOYEES_WRITE = "employees:write"
+EMPLOYEES_DELETE = "employees:delete"
+EMPLOYEES_CHAT = "employees:chat"
+
 # Built-in roles created for every organization; their slugs cannot be deleted.
 SYSTEM_ROLE_SLUGS: frozenset[str] = frozenset({"admin", "manager", "member"})
 
@@ -63,6 +68,10 @@ ALL_PERMISSION_SLUGS: tuple[str, ...] = (
     DOCUMENTS_WRITE,
     DOCUMENTS_DELETE,
     KNOWLEDGE_QUERY,
+    EMPLOYEES_READ,
+    EMPLOYEES_WRITE,
+    EMPLOYEES_DELETE,
+    EMPLOYEES_CHAT,
 )
 
 
@@ -102,6 +111,18 @@ DEFAULT_PERMISSIONS: tuple[PermissionDefinition, ...] = (
         KNOWLEDGE_QUERY,
         "Ask questions against the organization knowledge base",
     ),
+    PermissionDefinition("Read Employees", EMPLOYEES_READ, "View AI employees in the organization"),
+    PermissionDefinition(
+        "Write Employees",
+        EMPLOYEES_WRITE,
+        "Create and configure AI employees",
+    ),
+    PermissionDefinition("Delete Employees", EMPLOYEES_DELETE, "Delete AI employees"),
+    PermissionDefinition(
+        "Chat with Employees",
+        EMPLOYEES_CHAT,
+        "Send messages to active AI employees",
+    ),
 )
 
 # Which permission slugs each default role receives on organization creation.
@@ -120,12 +141,17 @@ ROLE_PERMISSION_SLUGS: dict[str, tuple[str, ...]] = {
         DOCUMENTS_READ,
         DOCUMENTS_WRITE,
         KNOWLEDGE_QUERY,
+        EMPLOYEES_READ,
+        EMPLOYEES_WRITE,
+        EMPLOYEES_CHAT,
     ),
     "member": (
         DEPARTMENTS_READ,
         TEAMS_READ,
         DOCUMENTS_READ,
         KNOWLEDGE_QUERY,
+        EMPLOYEES_READ,
+        EMPLOYEES_CHAT,
     ),
 }
 

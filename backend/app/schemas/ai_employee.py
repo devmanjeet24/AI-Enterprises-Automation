@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.enums import AIEmployeeStatus
 from app.schemas.validators import (
@@ -62,7 +62,18 @@ class AIEmployeeToolAssignmentRequest(BaseModel):
 
 
 class AIEmployeeKnowledgeAssignmentRequest(BaseModel):
-    knowledge_document_ids: list[uuid.UUID] = Field(min_length=0)
+    knowledge_document_ids: list[uuid.UUID] = Field(default_factory=list)
+
+
+class AIEmployeeToolsAssignmentRequest(BaseModel):
+    tools: list[AIEmployeeToolAssignmentRequest] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_unique_tool_slugs(self) -> "AIEmployeeToolsAssignmentRequest":
+        slugs = [tool.tool_slug for tool in self.tools]
+        if len(slugs) != len(set(slugs)):
+            raise ValueError("Duplicate tool slugs are not allowed in one request")
+        return self
 
 
 class AIEmployeeResponse(BaseModel):

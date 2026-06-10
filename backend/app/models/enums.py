@@ -17,3 +17,10 @@ class AIEmployeeStatus(str, enum.Enum):
 
     ACTIVE = "active"
     INACTIVE = "inactive"
+
+
+class MessageRole(str, enum.Enum):
+    """Author of one message in an AI employee conversation."""
+
+    USER = "user"
+    ASSISTANT = "assistant"

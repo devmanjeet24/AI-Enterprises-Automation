@@ -10,6 +10,7 @@ from app.models.enums import AIEmployeeStatus
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.ai_employee_conversation import AIEmployeeConversation
     from app.models.ai_employee_document import AIEmployeeDocument
     from app.models.ai_employee_tool import AIEmployeeTool
     from app.models.organization import Organization
@@ -60,6 +61,10 @@ class AIEmployee(Base, TimestampMixin):
         cascade="all, delete-orphan",
     )
     tools: Mapped[list["AIEmployeeTool"]] = relationship(
+        back_populates="ai_employee",
+        cascade="all, delete-orphan",
+    )
+    conversations: Mapped[list["AIEmployeeConversation"]] = relationship(
         back_populates="ai_employee",
         cascade="all, delete-orphan",
     )

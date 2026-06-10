@@ -88,16 +88,25 @@ class ChromaService:
         organization_id: uuid.UUID,
         query_embedding: list[float],
         top_k: int,
+        document_ids: list[uuid.UUID] | None = None,
     ) -> list[ChromaSearchHit]:
         """Return the most similar chunks for one organization."""
         collection = self._get_collection(organization_id)
         if collection.count() == 0:
             return []
 
+        if document_ids is not None and not document_ids:
+            return []
+
+        where_filter = _build_where_filter(
+            organization_id=organization_id,
+            document_ids=document_ids,
+        )
+
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
-            where={"organization_id": str(organization_id)},
+            where=where_filter,
             include=["documents", "metadatas", "distances"],
         )
 
@@ -122,6 +131,22 @@ class ChromaService:
             )
 
         return hits
+
+
+def _build_where_filter(
+    *,
+    organization_id: uuid.UUID,
+    document_ids: list[uuid.UUID] | None,
+) -> dict:
+    """Build a Chroma metadata filter for org-wide or document-scoped search."""
+    organization_filter = {"organization_id": str(organization_id)}
+    if document_ids is None:
+        return organization_filter
+
+    document_filter = {
+        "document_id": {"$in": [str(document_id) for document_id in document_ids]}
+    }
+    return {"$and": [organization_filter, document_filter]}
 
 
 def _distance_to_similarity(distance: float) -> float:
