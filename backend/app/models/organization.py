@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.ai_employee import AIEmployee
     from app.models.department import Department
     from app.models.document_chunk import DocumentChunk
     from app.models.knowledge_document import KnowledgeDocument
@@ -42,3 +43,4 @@ class Organization(Base, TimestampMixin):
         back_populates="organization",
     )
     document_chunks: Mapped[list["DocumentChunk"]] = relationship(back_populates="organization")
+    ai_employees: Mapped[list["AIEmployee"]] = relationship(back_populates="organization")

@@ -11,6 +11,7 @@ from app.models.enums import DocumentStatus
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.ai_employee_document import AIEmployeeDocument
     from app.models.document_chunk import DocumentChunk
     from app.models.organization import Organization
     from app.models.user import User
@@ -64,5 +65,9 @@ class KnowledgeDocument(Base, TimestampMixin):
     uploaded_by: Mapped["User | None"] = relationship(back_populates="uploaded_documents")
     chunks: Mapped[list["DocumentChunk"]] = relationship(
         back_populates="document",
+        cascade="all, delete-orphan",
+    )
+    ai_employee_assignments: Mapped[list["AIEmployeeDocument"]] = relationship(
+        back_populates="knowledge_document",
         cascade="all, delete-orphan",
     )

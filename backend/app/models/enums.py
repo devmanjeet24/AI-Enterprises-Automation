@@ -10,3 +10,10 @@ class DocumentStatus(str, enum.Enum):
     PROCESSING = "processing"
     READY = "ready"
     FAILED = "failed"
+
+
+class AIEmployeeStatus(str, enum.Enum):
+    """Whether an AI employee can receive chat requests."""
+
+    ACTIVE = "active"
+    INACTIVE = "inactive"

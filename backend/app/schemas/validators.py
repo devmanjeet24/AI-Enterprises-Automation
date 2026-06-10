@@ -274,6 +274,55 @@ StrippedOptionalDocumentType = Annotated[
     BeforeValidator(make_optional_strip_validator("Document type", max_length=50)),
 ]
 
+# --- AI Employee fields ---
+
+TOOL_SLUG_PATTERN = re.compile(r"^[a-z][a-z0-9_-]*$")
+
+
+def normalize_tool_slug(value: Any, *, field_label: str) -> str:
+    """Trim and validate lowercase tool slugs."""
+    stripped = strip_and_require_non_empty(value, field_label=field_label)
+    normalized = stripped.lower().replace(" ", "_")
+    if not TOOL_SLUG_PATTERN.match(normalized):
+        raise ValueError(
+            f"{field_label} must start with a letter and contain only lowercase letters, numbers, underscores, or hyphens"
+        )
+    return normalized[:50]
+
+
+StrippedAIEmployeeName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Employee name")),
+    Field(max_length=255),
+]
+StrippedOptionalAIEmployeeName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Employee name", max_length=255)),
+]
+StrippedAIEmployeeRole = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Employee role")),
+    Field(max_length=100),
+]
+StrippedOptionalAIEmployeeRole = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Employee role", max_length=100)),
+]
+StrippedAIEmployeeSystemPrompt = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("System prompt")),
+    Field(min_length=10, max_length=10000),
+]
+StrippedOptionalAIEmployeeSystemPrompt = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("System prompt", max_length=10000)),
+]
+StrippedToolSlug = Annotated[
+    str,
+    BeforeValidator(lambda value: normalize_tool_slug(value, field_label="Tool slug")),
+    Field(max_length=50),
+]
+
 # --- Shared aliases for future modules (Organizations API) ---
 
 StrippedName = Annotated[
