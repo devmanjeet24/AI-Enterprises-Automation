@@ -21,11 +21,13 @@ def get_user_permission_slugs(db: Session, user: User) -> set[str]:
     rows = db.execute(
         select(Permission.slug)
         .join(RolePermission, RolePermission.permission_id == Permission.id)
-        .join(UserRole, UserRole.role_id == RolePermission.role_id)
+        .join(Role, Role.id == RolePermission.role_id)
+        .join(UserRole, UserRole.role_id == Role.id)
         .where(
             UserRole.user_id == user.id,
             Permission.organization_id == user.organization_id,
             Permission.is_active.is_(True),
+            Role.is_active.is_(True),
         )
         .distinct()
     ).all()

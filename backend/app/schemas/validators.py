@@ -218,6 +218,33 @@ StrippedOptionalPermissionSlug = Annotated[
     BeforeValidator(make_optional_permission_slug_validator("Permission slug")),
 ]
 
+# --- Role fields ---
+
+StrippedRoleName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Role name")),
+    Field(max_length=100),
+]
+StrippedOptionalRoleName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Role name", max_length=100)),
+]
+StrippedOptionalRoleSlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Role slug", max_length=50)),
+]
+
+# --- User management fields ---
+
+StrippedOptionalFirstName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("First name", max_length=100)),
+]
+StrippedOptionalLastName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Last name", max_length=100)),
+]
+
 # --- Shared aliases for future modules (Organizations API) ---
 
 StrippedName = Annotated[

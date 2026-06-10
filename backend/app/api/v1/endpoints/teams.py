@@ -7,11 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import CurrentUser
+from app.core.authorization import require_permission
+from app.core.permissions import TEAMS_DELETE, TEAMS_READ, TEAMS_WRITE
 from app.core.text import slugify
 from app.db.session import get_db
 from app.models.department import Department
 from app.models.team import Team
+from app.models.user import User
 from app.schemas.team import TeamCreateRequest, TeamResponse, TeamUpdateRequest
 
 router = APIRouter(prefix="/teams", tags=["teams"])
@@ -91,7 +93,7 @@ def _ensure_unique_slug(
 @router.post("", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 def create_team(
     payload: TeamCreateRequest,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(TEAMS_WRITE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Team:
     """Create a team inside a department within the current user's organization."""
@@ -119,7 +121,7 @@ def create_team(
 
 @router.get("", response_model=list[TeamResponse])
 def list_teams(
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(TEAMS_READ))],
     db: Annotated[Session, Depends(get_db)],
 ) -> list[Team]:
     """List all teams in the current user's organization."""
@@ -135,7 +137,7 @@ def list_teams(
 @router.get("/{team_id}", response_model=TeamResponse)
 def get_team(
     team_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(TEAMS_READ))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Team:
     """Get one team by id within the current organization."""
@@ -150,7 +152,7 @@ def get_team(
 def update_team(
     team_id: uuid.UUID,
     payload: TeamUpdateRequest,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(TEAMS_WRITE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Team:
     """Update a team in the current organization."""
@@ -210,7 +212,7 @@ def update_team(
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team(
     team_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(TEAMS_DELETE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete a team from the current organization."""

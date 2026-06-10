@@ -7,11 +7,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.deps import CurrentUser
+from app.core.authorization import require_permission
+from app.core.permissions import (
+    PERMISSIONS_ASSIGN,
+    PERMISSIONS_DELETE,
+    PERMISSIONS_READ,
+    PERMISSIONS_WRITE,
+)
 from app.db.session import get_db
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
+from app.models.user import User
 from app.schemas.permission import (
     PermissionCreateRequest,
     PermissionResponse,
@@ -98,7 +105,7 @@ def _build_role_permission_response(link: RolePermission) -> RolePermissionRespo
 @router.post("", response_model=PermissionResponse, status_code=status.HTTP_201_CREATED)
 def create_permission(
     payload: PermissionCreateRequest,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_WRITE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Permission:
     """Create a permission inside the current user's organization."""
@@ -122,7 +129,7 @@ def create_permission(
 
 @router.get("", response_model=list[PermissionResponse])
 def list_permissions(
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_READ))],
     db: Annotated[Session, Depends(get_db)],
 ) -> list[Permission]:
     """List all permissions in the current user's organization."""
@@ -138,7 +145,7 @@ def list_permissions(
 @router.get("/{permission_id}", response_model=PermissionResponse)
 def get_permission(
     permission_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_READ))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Permission:
     """Get one permission by id within the current organization."""
@@ -153,7 +160,7 @@ def get_permission(
 def update_permission(
     permission_id: uuid.UUID,
     payload: PermissionUpdateRequest,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_WRITE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Permission:
     """Update a permission in the current organization."""
@@ -196,7 +203,7 @@ def update_permission(
 @router.delete("/{permission_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_permission(
     permission_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_DELETE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete a permission from the current organization."""
@@ -217,7 +224,7 @@ def delete_permission(
 def assign_permission_to_role(
     role_id: uuid.UUID,
     payload: RolePermissionAssignRequest,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_ASSIGN))],
     db: Annotated[Session, Depends(get_db)],
 ) -> RolePermissionResponse:
     """Grant a permission to a role within the current organization."""
@@ -261,7 +268,7 @@ def assign_permission_to_role(
 @router.get("/roles/{role_id}", response_model=list[RolePermissionResponse])
 def list_role_permissions(
     role_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_READ))],
     db: Annotated[Session, Depends(get_db)],
 ) -> list[RolePermissionResponse]:
     """List permissions granted to a role in the current organization."""
@@ -290,7 +297,7 @@ def list_role_permissions(
 def remove_permission_from_role(
     role_id: uuid.UUID,
     permission_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(PERMISSIONS_ASSIGN))],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Revoke a permission from a role in the current organization."""

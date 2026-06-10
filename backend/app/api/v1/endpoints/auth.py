@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import CurrentUser
 from app.api.validation import raise_validation_http_exception
+from app.core.permissions import seed_organization_permissions
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.organization import Organization
@@ -125,6 +126,7 @@ def register(
         db.flush()
 
         roles = _create_default_roles(db, organization.id)
+        seed_organization_permissions(db, organization.id, roles)
         assigned_role = roles["admin"]
     else:
         organization = db.scalar(

@@ -7,10 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import CurrentUser
+from app.core.authorization import require_permission
+from app.core.permissions import DEPARTMENTS_DELETE, DEPARTMENTS_READ, DEPARTMENTS_WRITE
 from app.core.text import slugify
 from app.db.session import get_db
 from app.models.department import Department
+from app.models.user import User
 from app.schemas.department import (
     DepartmentCreateRequest,
     DepartmentResponse,
@@ -74,7 +76,7 @@ def _ensure_unique_slug(
 @router.post("", response_model=DepartmentResponse, status_code=status.HTTP_201_CREATED)
 def create_department(
     payload: DepartmentCreateRequest,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(DEPARTMENTS_WRITE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Department:
     """Create a department inside the current user's organization."""
@@ -95,7 +97,7 @@ def create_department(
 
 @router.get("", response_model=list[DepartmentResponse])
 def list_departments(
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(DEPARTMENTS_READ))],
     db: Annotated[Session, Depends(get_db)],
 ) -> list[Department]:
     """List all departments in the current user's organization."""
@@ -111,7 +113,7 @@ def list_departments(
 @router.get("/{department_id}", response_model=DepartmentResponse)
 def get_department(
     department_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(DEPARTMENTS_READ))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Department:
     """Get one department by id within the current organization."""
@@ -126,7 +128,7 @@ def get_department(
 def update_department(
     department_id: uuid.UUID,
     payload: DepartmentUpdateRequest,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(DEPARTMENTS_WRITE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> Department:
     """Update a department in the current organization."""
@@ -173,7 +175,7 @@ def update_department(
 @router.delete("/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_department(
     department_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: Annotated[User, Depends(require_permission(DEPARTMENTS_DELETE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete a department from the current organization."""
