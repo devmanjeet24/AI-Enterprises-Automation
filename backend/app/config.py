@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
+    upload_dir: str = "uploads"
+    max_upload_size_mb: int = 25
+
     @field_validator("database_url", mode="after")
     @classmethod
     def normalize_database_url(cls, value: str) -> str:

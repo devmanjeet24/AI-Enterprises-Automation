@@ -33,6 +33,10 @@ ROLES_READ = "roles:read"
 ROLES_WRITE = "roles:write"
 ROLES_DELETE = "roles:delete"
 
+DOCUMENTS_READ = "documents:read"
+DOCUMENTS_WRITE = "documents:write"
+DOCUMENTS_DELETE = "documents:delete"
+
 # Built-in roles created for every organization; their slugs cannot be deleted.
 SYSTEM_ROLE_SLUGS: frozenset[str] = frozenset({"admin", "manager", "member"})
 
@@ -53,6 +57,9 @@ ALL_PERMISSION_SLUGS: tuple[str, ...] = (
     ROLES_READ,
     ROLES_WRITE,
     ROLES_DELETE,
+    DOCUMENTS_READ,
+    DOCUMENTS_WRITE,
+    DOCUMENTS_DELETE,
 )
 
 
@@ -80,6 +87,13 @@ DEFAULT_PERMISSIONS: tuple[PermissionDefinition, ...] = (
     PermissionDefinition("Read Roles", ROLES_READ, "View roles in the organization"),
     PermissionDefinition("Write Roles", ROLES_WRITE, "Create and update roles"),
     PermissionDefinition("Delete Roles", ROLES_DELETE, "Delete custom roles"),
+    PermissionDefinition("Read Documents", DOCUMENTS_READ, "View knowledge documents"),
+    PermissionDefinition(
+        "Write Documents",
+        DOCUMENTS_WRITE,
+        "Upload and update knowledge documents",
+    ),
+    PermissionDefinition("Delete Documents", DOCUMENTS_DELETE, "Delete knowledge documents"),
 )
 
 # Which permission slugs each default role receives on organization creation.
@@ -95,10 +109,13 @@ ROLE_PERMISSION_SLUGS: dict[str, tuple[str, ...]] = {
         PERMISSIONS_READ,
         USERS_READ,
         ROLES_READ,
+        DOCUMENTS_READ,
+        DOCUMENTS_WRITE,
     ),
     "member": (
         DEPARTMENTS_READ,
         TEAMS_READ,
+        DOCUMENTS_READ,
     ),
 }
 

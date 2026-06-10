@@ -1,10 +1,12 @@
 """Pytest configuration and shared fixtures."""
 
 import uuid
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import get_settings
 from app.main import app
 
 
@@ -43,3 +45,13 @@ def department_id(client: TestClient, auth_headers: dict[str, str]) -> str:
     )
     assert response.status_code == 201, response.text
     return response.json()["id"]
+
+
+@pytest.fixture
+def upload_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point uploads at a temporary directory for isolated document tests."""
+    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setenv("MAX_UPLOAD_SIZE_MB", "1")
+    get_settings.cache_clear()
+    yield tmp_path
+    get_settings.cache_clear()
