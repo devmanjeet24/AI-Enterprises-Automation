@@ -1,5 +1,7 @@
 from functools import lru_cache
+from urllib.parse import urlparse
 
+from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +22,40 @@ class Settings(BaseSettings):
     port: int = 8000
 
     api_v1_prefix: str = "/api/v1"
+
+    database_url: str
+
+    jwt_secret_key: str
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 60
+
+    upload_dir: str = "uploads"
+    max_upload_size_mb: int = 25
+
+    chroma_persist_dir: str = "chroma_data"
+    embedding_model_name: str = "BAAI/bge-small-en-v1.5"
+    retrieval_top_k: int = 5
+    retrieval_min_similarity_score: float = 0.5
+
+    groq_api_key: str
+    groq_model_name: str = "llama-3.3-70b-versatile"
+    groq_temperature: float = 0.2
+    groq_max_tokens: int = 512
+
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        """Ensure SQLAlchemy uses the psycopg2 driver with Neon-style URLs."""
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+psycopg2://", 1)
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return value
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_name(self) -> str:
+        return urlparse(self.database_url).path.lstrip("/") or "postgres"
 
 
 @lru_cache

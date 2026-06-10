@@ -11,3 +11,9 @@ wheels/
 
 # Environment variables
 .env
+
+# Uploaded knowledge documents
+uploads/
+
+# ChromaDB vector store
+chroma_data/
