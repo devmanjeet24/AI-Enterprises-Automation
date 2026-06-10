@@ -18,6 +18,7 @@ from app.schemas.validators import (
     StrippedOptionalDocumentType,
     StrippedOptionalKnowledgeDocumentTitle,
 )
+from app.services.chunking_service import ChunkingService, chunk_document
 from app.services.document_processor import process_document
 from app.services.document_service import (
     delete_document,
@@ -33,6 +34,10 @@ def get_upload_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> UploadService:
     return UploadService(settings)
+
+
+def get_chunking_service() -> ChunkingService:
+    return ChunkingService()
 
 
 @router.post("", response_model=KnowledgeDocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -106,6 +111,23 @@ def process_organization_document(
         organization_id=current_user.organization_id,
     )
     return process_document(db, settings, document)
+
+
+@router.post("/{document_id}/chunk", response_model=KnowledgeDocumentResponse)
+def chunk_organization_document(
+    document_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_permission(DOCUMENTS_WRITE))],
+    db: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    chunking_service: Annotated[ChunkingService, Depends(get_chunking_service)],
+) -> KnowledgeDocument:
+    """Split a processed PDF into DocumentChunk records."""
+    document = get_document_or_404(
+        db,
+        document_id=document_id,
+        organization_id=current_user.organization_id,
+    )
+    return chunk_document(db, settings, document, chunking_service)
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

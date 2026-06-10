@@ -18,11 +18,20 @@ class DocumentProcessingError(Exception):
 
 
 @dataclass(frozen=True)
+class PdfPageText:
+    """Text extracted from a single PDF page."""
+
+    page_number: int
+    text: str
+
+
+@dataclass(frozen=True)
 class PdfExtractionResult:
     """Text extracted from a PDF file."""
 
     page_count: int
     text: str
+    pages: list[PdfPageText]
 
 
 def extract_pdf_text(file_path: Path) -> PdfExtractionResult:
@@ -33,11 +42,13 @@ def extract_pdf_text(file_path: Path) -> PdfExtractionResult:
             if page_count == 0:
                 raise DocumentProcessingError("PDF contains no pages")
 
-            page_texts: list[str] = []
-            for page_number in range(page_count):
-                page_texts.append(pdf[page_number].get_text("text"))
+            pages: list[PdfPageText] = []
+            for page_index in range(page_count):
+                page_text = pdf[page_index].get_text("text").strip()
+                if page_text:
+                    pages.append(PdfPageText(page_number=page_index + 1, text=page_text))
 
-            text = "\n".join(page_texts).strip()
+            text = "\n\n".join(page.text for page in pages).strip()
     except DocumentProcessingError:
         raise
     except Exception as exc:
@@ -46,7 +57,7 @@ def extract_pdf_text(file_path: Path) -> PdfExtractionResult:
     if not text:
         raise DocumentProcessingError("No extractable text found in PDF")
 
-    return PdfExtractionResult(page_count=page_count, text=text)
+    return PdfExtractionResult(page_count=page_count, text=text, pages=pages)
 
 
 def process_document(
