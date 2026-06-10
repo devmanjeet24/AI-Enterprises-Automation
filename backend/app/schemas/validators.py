@@ -252,6 +252,11 @@ StrippedKnowledgeQuery = Annotated[
     BeforeValidator(make_required_strip_validator("Query")),
     Field(min_length=3, max_length=500),
 ]
+StrippedKnowledgeQuestion = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Question")),
+    Field(min_length=3, max_length=500),
+]
 
 # --- Knowledge document fields ---
 

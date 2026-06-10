@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "chroma_data"
     embedding_model_name: str = "BAAI/bge-small-en-v1.5"
     retrieval_top_k: int = 5
+    retrieval_min_similarity_score: float = 0.5
+
+    groq_api_key: str
+    groq_model_name: str = "llama-3.3-70b-versatile"
+    groq_temperature: float = 0.2
+    groq_max_tokens: int = 512
 
     @field_validator("database_url", mode="after")
     @classmethod
