@@ -4,7 +4,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission
@@ -12,6 +12,7 @@ from app.core.permissions import DEPARTMENTS_DELETE, DEPARTMENTS_READ, DEPARTMEN
 from app.core.text import slugify
 from app.db.session import get_db
 from app.models.department import Department
+from app.models.team import Team
 from app.models.user import User
 from app.schemas.department import (
     DepartmentCreateRequest,
@@ -184,5 +185,21 @@ def delete_department(
         department_id=department_id,
         organization_id=current_user.organization_id,
     )
+
+    team_count = db.scalar(
+        select(func.count())
+        .select_from(Team)
+        .where(Team.department_id == department.id)
+    ) or 0
+    if team_count > 0:
+        team_label = "team" if team_count == 1 else "teams"
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Cannot delete department: {team_count} {team_label} still belong "
+                "to this department. Remove or reassign the teams first."
+            ),
+        )
+
     db.delete(department)
     db.commit()

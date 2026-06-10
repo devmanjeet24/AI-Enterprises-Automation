@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 from app.api.router import api_router
 from app.config import get_settings
+from app.core.exception_handlers import register_exception_handlers
 from app.db.session import engine
 
 settings = get_settings()
@@ -25,6 +26,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+register_exception_handlers(app)
 app.include_router(api_router)
 
 
