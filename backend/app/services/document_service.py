@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.models.enums import DocumentStatus
 from app.models.knowledge_document import KnowledgeDocument
+from app.services.chroma_service import ChromaService
 
 
 def get_document_or_404(
@@ -55,7 +56,12 @@ def delete_document(
     settings: Settings,
     document: KnowledgeDocument,
 ) -> None:
-    """Delete a document's files, database record, and related chunks."""
+    """Delete a document's files, vectors, database record, and related chunks."""
+    ChromaService(settings.chroma_persist_dir).delete_vectors_for_document(
+        document.organization_id,
+        document.id,
+    )
+
     document_dir = Path(settings.upload_dir) / str(document.organization_id) / str(document.id)
     shutil.rmtree(document_dir, ignore_errors=True)
 

@@ -40,6 +40,7 @@ class KnowledgeDocumentResponse(BaseModel):
     chunk_count: int = Field(ge=0)
     error_message: str | None
     processed_at: datetime | None
+    embedded_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

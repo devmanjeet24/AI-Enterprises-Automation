@@ -55,3 +55,13 @@ def upload_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     get_settings.cache_clear()
     yield tmp_path
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def chroma_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point ChromaDB at a temporary directory for isolated retrieval tests."""
+    chroma_path = tmp_path / "chroma"
+    monkeypatch.setenv("CHROMA_PERSIST_DIR", str(chroma_path))
+    get_settings.cache_clear()
+    yield chroma_path
+    get_settings.cache_clear()

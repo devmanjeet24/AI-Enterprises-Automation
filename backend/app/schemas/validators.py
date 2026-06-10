@@ -245,6 +245,14 @@ StrippedOptionalLastName = Annotated[
     BeforeValidator(make_optional_strip_validator("Last name", max_length=100)),
 ]
 
+# --- Knowledge search fields ---
+
+StrippedKnowledgeQuery = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Query")),
+    Field(min_length=3, max_length=500),
+]
+
 # --- Knowledge document fields ---
 
 StrippedKnowledgeDocumentTitle = Annotated[

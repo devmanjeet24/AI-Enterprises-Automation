@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     max_upload_size_mb: int = 25
 
+    chroma_persist_dir: str = "chroma_data"
+    embedding_model_name: str = "BAAI/bge-small-en-v1.5"
+    retrieval_top_k: int = 5
+
     @field_validator("database_url", mode="after")
     @classmethod
     def normalize_database_url(cls, value: str) -> str:

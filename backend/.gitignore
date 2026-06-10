@@ -14,3 +14,6 @@ wheels/
 
 # Uploaded knowledge documents
 uploads/
+
+# ChromaDB vector store
+chroma_data/

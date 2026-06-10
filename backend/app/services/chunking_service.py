@@ -13,6 +13,7 @@ from app.config import Settings
 from app.models.document_chunk import DocumentChunk
 from app.models.enums import DocumentStatus
 from app.models.knowledge_document import KnowledgeDocument
+from app.services.chroma_service import ChromaService
 from app.services.document_processor import DocumentProcessingError, PdfPageText, extract_pdf_text
 
 # Tuned for handbooks, policies, SOPs, and internal docs (~150-200 tokens per chunk).
@@ -132,6 +133,10 @@ def chunk_document(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No chunkable text found in PDF",
         )
+
+    chroma_service = ChromaService(settings.chroma_persist_dir)
+    chroma_service.delete_vectors_for_document(document.organization_id, document.id)
+    document.embedded_at = None
 
     db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
 
