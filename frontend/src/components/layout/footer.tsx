@@ -5,10 +5,10 @@ import { siteConfig } from "@/config/site";
 
 const footerLinks = {
   product: [
-    { label: "AI Employees", href: "#" },
-    { label: "Workflows", href: "#" },
-    { label: "Agent Teams", href: "#" },
-    { label: "Knowledge", href: "#" },
+    { label: "Platform", href: "#platform" },
+    { label: "Solutions", href: "#solutions" },
+    { label: "Pricing", href: "#pricing" },
+    { label: "Resources", href: "#resources" },
   ],
   company: [
     { label: "About", href: "#" },

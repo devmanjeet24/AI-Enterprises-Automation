@@ -1,13 +1,35 @@
-import { Section } from "@/components/layout/section";
+import {
+  AiEmployeeStudioSection,
+  AnalyticsSection,
+  BrowserAutomationSection,
+  BusinessResearchHubSection,
+  CtaSection,
+  HeroSection,
+  KnowledgeIntelligenceSection,
+  MultiAgentCollaborationSection,
+  PlatformOverviewSection,
+  PricingSection,
+  TestimonialsSection,
+  TrustedBySection,
+  WorkflowAutomationSection,
+} from "@/components/landing";
 
 export default function HomePage() {
   return (
-    <Section spacing="hero" className="hero-gradient">
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm text-tertiary">
-          Design foundation ready — feature sections coming next.
-        </p>
-      </div>
-    </Section>
+    <>
+      <HeroSection />
+      {/* <TrustedBySection /> */}
+      <PlatformOverviewSection />
+      <AiEmployeeStudioSection />
+      <KnowledgeIntelligenceSection />
+      <MultiAgentCollaborationSection />
+      <WorkflowAutomationSection />
+      <BusinessResearchHubSection />
+      <BrowserAutomationSection />
+      <AnalyticsSection />
+      <TestimonialsSection />
+      <PricingSection />
+      <CtaSection />
+    </>
   );
 }

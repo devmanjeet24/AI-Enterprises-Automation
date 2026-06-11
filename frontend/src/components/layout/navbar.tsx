@@ -5,36 +5,36 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
-import { useUiStore } from "@/stores/ui-store";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  setMobileMenuOpen,
+  toggleMobileMenu,
+} from "@/store/slices/ui-slice";
 import { cn } from "@/lib/utils";
 
 import { Container } from "./container";
 
+const navLinkClass =
+  "text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200";
+
 function Navbar() {
-  const { mobileMenuOpen, setMobileMenuOpen, toggleMobileMenu } = useUiStore();
+  const dispatch = useAppDispatch();
+  const mobileMenuOpen = useAppSelector((state) => state.ui.mobileMenuOpen);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 pt-6">
+    <header className="fixed inset-x-0 top-0 z-50 pt-5 md:pt-6">
       <Container>
         <nav
-          className="glass flex h-[52px] items-center justify-between rounded-full px-4 md:px-6"
+          className="glass-light relative grid h-[52px] w-full grid-cols-[1fr_auto_1fr] items-center rounded-full px-4 md:h-14 md:px-5"
           aria-label="Main navigation"
         >
-          <Link
-            href="/"
-            className="text-sm font-medium tracking-tight text-foreground"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            {siteConfig.name}
-            <span className="text-muted-foreground">.ai</span>
-          </Link>
-
-          <ul className="hidden items-center gap-8 md:flex">
+          {/* Left — nav links (desktop) */}
+          <ul className="hidden items-center gap-7 lg:flex">
             {siteConfig.nav.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className={cn(navLinkClass, "text-[#0a0f1a]/85 hover:text-[#0a0f1a]")}
                 >
                   {item.label}
                 </Link>
@@ -42,19 +42,36 @@ function Navbar() {
             ))}
           </ul>
 
-          <div className="hidden items-center gap-3 md:flex">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={siteConfig.links.login}>Sign in</Link>
+          {/* Center — logo */}
+          <Link
+            href="/"
+            className="justify-self-center text-sm font-semibold tracking-[-0.02em] text-[#0a0f1a] lg:text-[15px]"
+            onClick={() => dispatch(setMobileMenuOpen(false))}
+          >
+            {siteConfig.name}
+            <span className="font-normal text-[#0a0f1a]/55">.ai</span>
+          </Link>
+
+          {/* Right — auth CTAs (desktop) */}
+          <div className="hidden items-center justify-end gap-2.5 lg:flex">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-[13px] font-medium text-[#0a0f1a] hover:bg-[#0a0f1a]/6 hover:text-[#0a0f1a]"
+              asChild
+            >
+              <Link href={siteConfig.links.login}>Sign In</Link>
             </Button>
-            <Button variant="brand" size="sm" asChild>
-              <Link href={siteConfig.links.demo}>Book a demo</Link>
+            <Button variant="brand" size="sm" className="text-[13px] font-medium" asChild>
+              <Link href={siteConfig.links.register}>Get Started</Link>
             </Button>
           </div>
 
+          {/* Mobile menu toggle */}
           <button
             type="button"
-            className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground md:hidden"
-            onClick={toggleMobileMenu}
+            className="col-start-3 justify-self-end inline-flex size-9 items-center justify-center rounded-full text-[#0a0f1a] transition-colors hover:bg-[#0a0f1a]/6 lg:hidden"
+            onClick={() => dispatch(toggleMobileMenu())}
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
@@ -66,41 +83,46 @@ function Navbar() {
           </button>
         </nav>
 
+        {/* Mobile dropdown */}
         <div
           className={cn(
-            "glass mt-3 overflow-hidden rounded-2xl transition-all duration-300 md:hidden",
+            "glass-light mt-3 overflow-hidden rounded-2xl transition-all duration-300 lg:hidden",
             mobileMenuOpen
               ? "max-h-96 opacity-100"
               : "max-h-0 opacity-0 pointer-events-none",
           )}
         >
-          <ul className="flex flex-col gap-1 p-3">
+          <ul className="flex flex-col gap-0.5 p-3">
             {siteConfig.nav.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="block rounded-lg px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-                  onClick={() => setMobileMenuOpen(false)}
+                  className="block rounded-lg px-4 py-3 text-sm font-medium text-[#0a0f1a]/85 transition-colors hover:bg-[#0a0f1a]/5 hover:text-[#0a0f1a]"
+                  onClick={() => dispatch(setMobileMenuOpen(false))}
                 >
                   {item.label}
                 </Link>
               </li>
             ))}
-            <li className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
-              <Button variant="ghost" className="w-full justify-center" asChild>
+            <li className="mt-2 flex flex-col gap-2 border-t border-[#0a0f1a]/10 pt-3">
+              <Button
+                variant="ghost"
+                className="w-full justify-center font-medium text-[#0a0f1a] hover:bg-[#0a0f1a]/5"
+                asChild
+              >
                 <Link
                   href={siteConfig.links.login}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => dispatch(setMobileMenuOpen(false))}
                 >
-                  Sign in
+                  Sign In
                 </Link>
               </Button>
-              <Button variant="brand" className="w-full justify-center" asChild>
+              <Button variant="brand" className="w-full justify-center font-medium" asChild>
                 <Link
-                  href={siteConfig.links.demo}
-                  onClick={() => setMobileMenuOpen(false)}
+                  href={siteConfig.links.register}
+                  onClick={() => dispatch(setMobileMenuOpen(false))}
                 >
-                  Book a demo
+                  Get Started
                 </Link>
               </Button>
             </li>

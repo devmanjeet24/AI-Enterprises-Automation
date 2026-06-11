@@ -8,11 +8,11 @@ export const siteConfig = {
   links: {
     docs: "/docs",
     login: "/login",
-    signup: "/signup",
+    register: "/register",
     demo: "/demo",
   },
   nav: [
-    { label: "Product", href: "#product" },
+    { label: "Platform", href: "#platform" },
     { label: "Solutions", href: "#solutions" },
     { label: "Resources", href: "#resources" },
     { label: "Pricing", href: "#pricing" },
