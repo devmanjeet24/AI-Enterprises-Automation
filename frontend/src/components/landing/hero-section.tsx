@@ -14,8 +14,8 @@ export function HeroSection() {
   const prefersReducedMotion = useReducedMotion();
 
   return (
-    <div className="bg-[#eef1f8] pb-16 md:pb-24 lg:pb-32">
-      <section className="relative isolate min-h-[92vh] overflow-hidden rounded-b-[3rem] shadow-[0_24px_80px_rgba(10,15,26,0.12)] md:min-h-[94vh] md:rounded-b-[4rem] lg:rounded-b-[5rem] xl:rounded-b-[5.5rem]">
+    <div className="relative bg-background pb-8 md:pb-10 lg:pb-12">
+      <section className="relative z-10 isolate min-h-[92vh] overflow-hidden rounded-b-[3rem] shadow-[0_32px_80px_rgba(0,0,0,0.45)] md:min-h-[94vh] md:rounded-b-[4rem] lg:rounded-b-[5rem] xl:rounded-b-[5.5rem]">
         {/* Background video */}
         <div className="absolute inset-0">
           <video
@@ -33,14 +33,16 @@ export function HeroSection() {
         {/* Light overlay — left-side gradient only for text legibility */}
         <div
           className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(105deg, rgba(10,15,26,0.55) 0%, rgba(10,15,26,0.28) 42%, rgba(10,15,26,0.08) 68%, transparent 100%)",
-          }}
+          // style={{
+          //   background:
+          //     "linear-gradient(105deg, rgba(10,15,26,0.55) 0%, rgba(10,15,26,0.28) 42%, rgba(10,15,26,0.08) 68%, transparent 100%)",
+          // }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a]/35 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a]/50 via-transparent to-transparent" />
         {/* Top scrim — improves navbar + headline contrast without darkening video */}
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#0a0f1a]/25 to-transparent" />
+        {/* Bottom fade — blends video into page background below rounded corners */}
+        <div className="hero-bottom-fade pointer-events-none absolute inset-x-0 bottom-0 z-10 h-40 md:h-52" />
 
         <Container className="relative flex min-h-[92vh] flex-col justify-between pb-12 pt-28 md:min-h-[94vh] md:pb-16 md:pt-32">
           {/* Main copy — left-aligned, compact */}

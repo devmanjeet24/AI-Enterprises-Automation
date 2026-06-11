@@ -5,12 +5,12 @@ import {
   BusinessResearchHubSection,
   CtaSection,
   HeroSection,
+  HeroVisualSection,
   KnowledgeIntelligenceSection,
   MultiAgentCollaborationSection,
   PlatformOverviewSection,
   PricingSection,
   TestimonialsSection,
-  TrustedBySection,
   WorkflowAutomationSection,
 } from "@/components/landing";
 
@@ -18,7 +18,7 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      {/* <TrustedBySection /> */}
+      <HeroVisualSection />
       <PlatformOverviewSection />
       <AiEmployeeStudioSection />
       <KnowledgeIntelligenceSection />

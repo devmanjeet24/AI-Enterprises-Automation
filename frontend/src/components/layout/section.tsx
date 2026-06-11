@@ -6,12 +6,13 @@ import { Container } from "./container";
 
 export interface SectionProps extends React.HTMLAttributes<HTMLElement> {
   containerSize?: "default" | "narrow" | "wide";
-  spacing?: "default" | "compact" | "hero";
+  spacing?: "default" | "compact" | "connected" | "hero";
   contained?: boolean;
 }
 
 const spacingClasses = {
   compact: "py-16 md:py-20",
+  connected: "pt-10 pb-24 md:pt-14 md:pb-32",
   default: "py-24 md:py-32",
   hero: "pt-32 pb-24 md:pt-40 md:pb-32",
 };

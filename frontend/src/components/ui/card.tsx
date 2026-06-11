@@ -14,9 +14,8 @@ const Card = React.forwardRef<
       "rounded-xl border text-card-foreground",
       variant === "default" &&
         "border-border bg-surface",
-      variant === "glass" && "glass-card",
-      variant === "featured" &&
-        "glass-card border-border-strong shadow-glow-sm",
+      variant === "glass" && "premium-card",
+      variant === "featured" && "premium-card premium-card-featured",
       className,
     )}
     {...props}

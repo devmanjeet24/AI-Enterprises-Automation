@@ -4,6 +4,7 @@ export { BrowserAutomationSection } from "./browser-automation-section";
 export { BusinessResearchHubSection } from "./business-research-hub-section";
 export { CtaSection } from "./cta-section";
 export { HeroSection } from "./hero-section";
+export { HeroVisualSection } from "./hero-visual-section";
 export { KnowledgeIntelligenceSection } from "./knowledge-intelligence-section";
 export { MultiAgentCollaborationSection } from "./multi-agent-collaboration-section";
 export { PlatformOverviewSection } from "./platform-overview-section";

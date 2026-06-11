@@ -31,7 +31,7 @@ function SectionHeading({
       {...props}
     >
       {overline ? (
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-tertiary">
+        <p className="inline-flex items-center rounded-full border border-border bg-white/[0.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-tertiary backdrop-blur-sm">
           {overline}
         </p>
       ) : null}

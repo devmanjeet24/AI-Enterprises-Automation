@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Instrument_Serif } from "next/font/google";
 
-import { Footer } from "@/components/layout/footer";
-import { Navbar } from "@/components/layout/navbar";
 import { siteConfig } from "@/config/site";
 
 import { Providers } from "./providers";
@@ -45,11 +43,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} dark h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Providers>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

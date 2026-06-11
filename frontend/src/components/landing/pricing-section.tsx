@@ -1,20 +1,22 @@
+"use client";
+
 import { Check } from "lucide-react";
 import Link from "next/link";
 
-import { Section } from "@/components/layout/section";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { pricingPlans } from "@/config/landing";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
+import { LandingCard } from "./landing-card";
+import { LandingSection } from "./landing-section";
 import { ScrollReveal } from "./scroll-reveal";
 import { StaggerGrid, StaggerItem } from "./stagger-grid";
 
 export function PricingSection() {
   return (
-    <Section id="pricing" spacing="default" className="section-gradient">
+    <LandingSection id="pricing" spacing="default" ambient="brand" subtleGradient>
       <ScrollReveal>
         <SectionHeading
           overline="Pricing"
@@ -24,16 +26,23 @@ export function PricingSection() {
         />
       </ScrollReveal>
 
-      <StaggerGrid className="mt-16 grid gap-6 lg:grid-cols-3">
+      <StaggerGrid className="mt-14 grid gap-4 lg:grid-cols-3 md:mt-16">
         {pricingPlans.map((plan) => (
           <StaggerItem key={plan.name}>
-            <Card
-              variant={plan.highlighted ? "featured" : "glass"}
+            <LandingCard
+              featured={plan.highlighted}
               className={cn(
-                "flex h-full flex-col p-8 transition-all duration-300",
-                plan.highlighted && "scale-[1.02] lg:scale-105",
+                "flex flex-col p-8",
+                plan.highlighted && "lg:-mt-2 lg:mb-2",
               )}
             >
+              {plan.highlighted ? (
+                <span className="mb-4 inline-flex w-fit rounded-full border border-brand/30 bg-brand-muted/60 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">
+                  Most popular
+                </span>
+              ) : (
+                <span className="mb-4 block h-[22px]" aria-hidden />
+              )}
               <h3 className="text-lg font-medium text-foreground">{plan.name}</h3>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="font-display text-4xl text-foreground">
@@ -49,9 +58,11 @@ export function PricingSection() {
                 {plan.features.map((feature) => (
                   <li
                     key={feature}
-                    className="flex items-start gap-2 text-sm text-muted-foreground"
+                    className="flex items-start gap-2.5 text-sm text-muted-foreground"
                   >
-                    <Check className="mt-0.5 size-4 shrink-0 text-brand" />
+                    <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border border-brand/20 bg-brand-muted/40">
+                      <Check className="size-2.5 text-brand" />
+                    </span>
                     {feature}
                   </li>
                 ))}
@@ -59,7 +70,7 @@ export function PricingSection() {
 
               <Button
                 variant={plan.highlighted ? "brand" : "outline"}
-                className="mt-8 w-full"
+                className="mt-8 w-full transition-transform duration-300 hover:scale-[1.02]"
                 asChild
               >
                 <Link
@@ -72,10 +83,10 @@ export function PricingSection() {
                   {plan.cta}
                 </Link>
               </Button>
-            </Card>
+            </LandingCard>
           </StaggerItem>
         ))}
       </StaggerGrid>
-    </Section>
+    </LandingSection>
   );
 }

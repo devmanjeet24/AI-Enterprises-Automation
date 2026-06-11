@@ -1,9 +1,8 @@
-import { Check } from "lucide-react";
-
-import { Section } from "@/components/layout/section";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { cn } from "@/lib/utils";
 
+import { BulletList } from "./bullet-list";
+import { LandingSection } from "./landing-section";
 import { MockUiPanel, type MockVariant } from "./mock-ui-panel";
 import { ScrollReveal } from "./scroll-reveal";
 
@@ -31,10 +30,15 @@ export function FeatureSection({
   className,
 }: FeatureSectionProps) {
   return (
-    <Section id={id} spacing="default" className={className}>
+    <LandingSection
+      id={id}
+      spacing="default"
+      ambient={reversed ? "cool" : "warm"}
+      className={className}
+    >
       <div
         className={cn(
-          "grid items-center gap-12 lg:grid-cols-2 lg:gap-20",
+          "grid items-center gap-14 lg:grid-cols-2 lg:gap-20",
           reversed && "lg:[&>*:first-child]:order-2",
         )}
       >
@@ -46,23 +50,13 @@ export function FeatureSection({
             accent={accent}
             description={description}
           />
-          <ul className="mt-8 space-y-3">
-            {bullets.map((bullet) => (
-              <li
-                key={bullet}
-                className="flex items-start gap-3 text-sm text-muted-foreground"
-              >
-                <Check className="mt-0.5 size-4 shrink-0 text-brand" />
-                {bullet}
-              </li>
-            ))}
-          </ul>
+          <BulletList items={bullets} />
         </ScrollReveal>
 
-        <ScrollReveal delay={0.15}>
+        <ScrollReveal delay={0.12}>
           <MockUiPanel variant={mockVariant} />
         </ScrollReveal>
       </div>
-    </Section>
+    </LandingSection>
   );
 }
