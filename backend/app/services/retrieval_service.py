@@ -78,6 +78,7 @@ def search_documents(
     embedding_service: EmbeddingService,
     chroma_service: ChromaService,
     top_k: int | None = None,
+    document_ids: list[uuid.UUID] | None = None,
 ) -> DocumentSearchResponse:
     """Search embedded chunks semantically within one organization."""
     limit = top_k or settings.retrieval_top_k
@@ -86,6 +87,7 @@ def search_documents(
         organization_id=organization_id,
         query_embedding=query_embedding,
         top_k=limit,
+        document_ids=document_ids,
     )
 
     results = [

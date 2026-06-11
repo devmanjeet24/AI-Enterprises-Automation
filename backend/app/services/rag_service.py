@@ -71,22 +71,35 @@ class RAGService:
                 sources=[],
             )
 
-        context = _build_context(relevant_results)
-        answer = self._generate_answer(question=question, context=context)
-        sources = _build_citations(relevant_results)
+        context = build_context(relevant_results)
+        answer = self._generate_answer(
+            question=question,
+            context=context,
+            system_prompt=SYSTEM_PROMPT,
+        )
+        sources = build_citations(relevant_results)
         return KnowledgeQueryResponse(answer=answer, sources=sources)
 
-    def _generate_answer(self, *, question: str, context: str) -> str:
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
+    def _generate_answer(
+        self,
+        *,
+        question: str,
+        context: str,
+        system_prompt: str = SYSTEM_PROMPT,
+        history_messages: list | None = None,
+    ) -> str:
+        messages = [SystemMessage(content=system_prompt)]
+        if history_messages:
+            messages.extend(history_messages)
+        messages.append(
             HumanMessage(
                 content=(
                     f"Context:\n{context}\n\n"
                     f"Question: {question}\n\n"
                     "Answer:"
                 )
-            ),
-        ]
+            )
+        )
 
         try:
             response = self._llm.invoke(messages)
@@ -114,7 +127,7 @@ class RAGService:
         )
 
 
-def _build_context(results: list[DocumentSearchResult]) -> str:
+def build_context(results: list[DocumentSearchResult]) -> str:
     """Format retrieved chunks into labeled context blocks for the LLM."""
     blocks: list[str] = []
     for result in results:
@@ -123,7 +136,7 @@ def _build_context(results: list[DocumentSearchResult]) -> str:
     return "\n\n".join(blocks)
 
 
-def _build_citations(results: list[DocumentSearchResult]) -> list[KnowledgeSourceCitation]:
+def build_citations(results: list[DocumentSearchResult]) -> list[KnowledgeSourceCitation]:
     """Deduplicate citations by document title and page, keeping the strongest match."""
     best_matches: dict[tuple[str, int | None], KnowledgeSourceCitation] = {}
 
