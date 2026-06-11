@@ -9,6 +9,8 @@ from app.db.base import Base
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.agent_task import AgentTask
+    from app.models.agent_team import AgentTeam
     from app.models.ai_employee import AIEmployee
     from app.models.ai_employee_conversation import AIEmployeeConversation
     from app.models.department import Department
@@ -18,6 +20,13 @@ if TYPE_CHECKING:
     from app.models.role import Role
     from app.models.team import Team
     from app.models.user import User
+    from app.models.browser_profile import BrowserProfile
+    from app.models.browser_task import BrowserTask
+    from app.models.browser_task_execution import BrowserTaskExecution
+    from app.models.research_project import ResearchProject
+    from app.models.research_report import ResearchReport
+    from app.models.workflow import Workflow
+    from app.models.workflow_execution import WorkflowExecution
 
 
 class Organization(Base, TimestampMixin):
@@ -46,5 +55,26 @@ class Organization(Base, TimestampMixin):
     document_chunks: Mapped[list["DocumentChunk"]] = relationship(back_populates="organization")
     ai_employees: Mapped[list["AIEmployee"]] = relationship(back_populates="organization")
     ai_employee_conversations: Mapped[list["AIEmployeeConversation"]] = relationship(
+        back_populates="organization",
+    )
+    agent_teams: Mapped[list["AgentTeam"]] = relationship(back_populates="organization")
+    agent_tasks: Mapped[list["AgentTask"]] = relationship(back_populates="organization")
+    workflows: Mapped[list["Workflow"]] = relationship(back_populates="organization")
+    workflow_executions: Mapped[list["WorkflowExecution"]] = relationship(
+        back_populates="organization",
+    )
+    research_projects: Mapped[list["ResearchProject"]] = relationship(
+        back_populates="organization",
+    )
+    research_reports: Mapped[list["ResearchReport"]] = relationship(
+        back_populates="organization",
+    )
+    browser_profiles: Mapped[list["BrowserProfile"]] = relationship(
+        back_populates="organization",
+    )
+    browser_tasks: Mapped[list["BrowserTask"]] = relationship(
+        back_populates="organization",
+    )
+    browser_task_executions: Mapped[list["BrowserTaskExecution"]] = relationship(
         back_populates="organization",
     )

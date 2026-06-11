@@ -76,6 +76,7 @@ class UserMeResponse(BaseModel):
     organization_slug: str
     is_active: bool
     roles: list[RoleSummary]
+    permissions: list[str]
     created_at: datetime
 
     model_config = {"from_attributes": True}

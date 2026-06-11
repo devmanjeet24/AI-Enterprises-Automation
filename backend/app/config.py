@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     port: int = 8000
 
     api_v1_prefix: str = "/api/v1"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     database_url: str
 
@@ -56,6 +57,12 @@ class Settings(BaseSettings):
     @property
     def database_name(self) -> str:
         return urlparse(self.database_url).path.lstrip("/") or "postgres"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Parse comma-separated CORS origins from settings."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

@@ -9,11 +9,11 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentUser, get_db
 from app.api.validation import raise_validation_http_exception
+from app.core.authorization import get_user_permission_slugs
 from app.core.permissions import seed_organization_permissions
 from app.core.security import create_access_token, hash_password, verify_password
-from app.db.session import get_db
 from app.models.organization import Organization
 from app.models.role import Role
 from app.models.user import User
@@ -75,7 +75,7 @@ def _build_token_for_user(user: User) -> TokenResponse:
     return TokenResponse(access_token=access_token)
 
 
-def _build_me_response(user: User) -> UserMeResponse:
+def _build_me_response(user: User, *, permissions: list[str]) -> UserMeResponse:
     return UserMeResponse(
         id=user.id,
         email=user.email,
@@ -86,8 +86,36 @@ def _build_me_response(user: User) -> UserMeResponse:
         organization_slug=user.organization.slug,
         is_active=user.is_active,
         roles=[RoleSummary.model_validate(role) for role in user.roles],
+        permissions=sorted(permissions),
         created_at=user.created_at,
     )
+
+
+def _authenticate_user(db: Session, credentials: LoginRequest) -> User:
+    """Validate credentials and return the authenticated user."""
+    user = db.scalar(
+        select(User)
+        .where(User.email == credentials.email)
+        .options(selectinload(User.roles), selectinload(User.organization))
+    )
+    if user is None or user.password_hash is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not verify_password(credentials.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Inactive user account",
+        )
+    return user
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -185,33 +213,25 @@ def login(
     except ValidationError as exc:
         raise_validation_http_exception(exc)
 
-    user = db.scalar(
-        select(User)
-        .where(User.email == credentials.email)
-        .options(selectinload(User.roles), selectinload(User.organization))
-    )
-    if user is None or user.password_hash is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if not verify_password(credentials.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user account",
-        )
+    user = _authenticate_user(db, credentials)
+    return _build_token_for_user(user)
 
+
+@router.post("/login/json", response_model=TokenResponse)
+def login_json(
+    payload: LoginRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> TokenResponse:
+    """Login with a JSON body containing email and password. Returns a JWT."""
+    user = _authenticate_user(db, payload)
     return _build_token_for_user(user)
 
 
 @router.get("/me", response_model=UserMeResponse)
-def read_current_user(current_user: CurrentUser) -> UserMeResponse:
-    """Return the currently authenticated user's profile and roles."""
-    return _build_me_response(current_user)
+def read_current_user(
+    current_user: CurrentUser,
+    db: Annotated[Session, Depends(get_db)],
+) -> UserMeResponse:
+    """Return the currently authenticated user's profile, roles, and permissions."""
+    permissions = get_user_permission_slugs(db, current_user)
+    return _build_me_response(current_user, permissions=list(permissions))

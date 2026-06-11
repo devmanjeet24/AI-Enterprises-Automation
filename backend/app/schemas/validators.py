@@ -323,6 +323,116 @@ StrippedToolSlug = Annotated[
     Field(max_length=50),
 ]
 
+# --- Agent team fields ---
+
+StrippedAgentTeamName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Agent team name")),
+    Field(max_length=100),
+]
+StrippedOptionalAgentTeamName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Agent team name", max_length=100)),
+]
+StrippedOptionalAgentTeamSlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Agent team slug", max_length=50)),
+]
+StrippedCollaborationRole = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Collaboration role")),
+    Field(max_length=100),
+]
+
+# --- Agent task fields ---
+
+StrippedAgentTaskTitle = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Task title")),
+    Field(max_length=255),
+]
+StrippedAgentTaskDescription = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Task description")),
+]
+
+# --- Workflow fields ---
+
+StrippedWorkflowName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Workflow name")),
+    Field(max_length=100),
+]
+StrippedOptionalWorkflowName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Workflow name", max_length=100)),
+]
+StrippedOptionalWorkflowSlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Workflow slug", max_length=50)),
+]
+StrippedWorkflowStepName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Workflow step name")),
+    Field(max_length=100),
+]
+
+# --- Research project fields ---
+
+StrippedResearchProjectName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Research project name")),
+    Field(max_length=100),
+]
+StrippedOptionalResearchProjectName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Research project name", max_length=100)),
+]
+StrippedOptionalResearchProjectSlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Research project slug", max_length=50)),
+]
+StrippedResearchBrief = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Research brief")),
+]
+
+# --- Browser profile fields ---
+
+StrippedBrowserProfileName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Browser profile name")),
+    Field(max_length=100),
+]
+StrippedOptionalBrowserProfileName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Browser profile name", max_length=100)),
+]
+StrippedOptionalBrowserProfileSlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Browser profile slug", max_length=50)),
+]
+
+# --- Browser task fields ---
+
+StrippedBrowserTaskName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Browser task name")),
+    Field(max_length=100),
+]
+StrippedOptionalBrowserTaskName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Browser task name", max_length=100)),
+]
+StrippedOptionalBrowserTaskSlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Browser task slug", max_length=50)),
+]
+StrippedOptionalTargetUrl = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Target URL", max_length=2048)),
+]
+
 # --- Shared aliases for future modules (Organizations API) ---
 
 StrippedName = Annotated[
