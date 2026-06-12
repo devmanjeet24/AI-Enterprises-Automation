@@ -2,10 +2,12 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface UiState {
   mobileMenuOpen: boolean;
+  sidebarCollapsed: boolean;
 }
 
 const initialState: UiState = {
   mobileMenuOpen: false,
+  sidebarCollapsed: false,
 };
 
 const uiSlice = createSlice({
@@ -18,8 +20,19 @@ const uiSlice = createSlice({
     toggleMobileMenu: (state) => {
       state.mobileMenuOpen = !state.mobileMenuOpen;
     },
+    setSidebarCollapsed: (state, action: PayloadAction<boolean>) => {
+      state.sidebarCollapsed = action.payload;
+    },
+    toggleSidebarCollapsed: (state) => {
+      state.sidebarCollapsed = !state.sidebarCollapsed;
+    },
   },
 });
 
-export const { setMobileMenuOpen, toggleMobileMenu } = uiSlice.actions;
+export const {
+  setMobileMenuOpen,
+  toggleMobileMenu,
+  setSidebarCollapsed,
+  toggleSidebarCollapsed,
+} = uiSlice.actions;
 export default uiSlice.reducer;
