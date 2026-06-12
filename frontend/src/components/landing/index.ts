@@ -1,0 +1,14 @@
+export { AiEmployeeStudioSection } from "./ai-employee-studio-section";
+export { AnalyticsSection } from "./analytics-section";
+export { BrowserAutomationSection } from "./browser-automation-section";
+export { BusinessResearchHubSection } from "./business-research-hub-section";
+export { CtaSection } from "./cta-section";
+export { HeroSection } from "./hero-section";
+export { HeroVisualSection } from "./hero-visual-section";
+export { KnowledgeIntelligenceSection } from "./knowledge-intelligence-section";
+export { MultiAgentCollaborationSection } from "./multi-agent-collaboration-section";
+export { PlatformOverviewSection } from "./platform-overview-section";
+export { PricingSection } from "./pricing-section";
+export { TestimonialsSection } from "./testimonials-section";
+export { TrustedBySection } from "./trusted-by-section";
+export { WorkflowAutomationSection } from "./workflow-automation-section";
