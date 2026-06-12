@@ -2,55 +2,29 @@
 
 import { Activity, Clock, Shield, Sparkles } from "lucide-react";
 
-import { dashboardAccents, type DashboardAccent } from "@/lib/dashboard-accents";
+import type { OverviewPlatformMetric } from "@/lib/dashboard/types";
+import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
 import { DashboardCard, DashboardCardHeader } from "../dashboard-card";
 
-const pulseMetrics: {
-  icon: typeof Activity;
-  label: string;
-  value: string;
-  detail: string;
-  accent: DashboardAccent;
-}[] = [
-  {
-    icon: Activity,
-    label: "System load",
-    value: "34%",
-    detail: "Healthy",
-    accent: "emerald",
-  },
-  {
-    icon: Clock,
-    label: "Avg latency",
-    value: "1.2s",
-    detail: "−0.3s vs avg",
-    accent: "blue",
-  },
-  {
-    icon: Shield,
-    label: "Compliance",
-    value: "100%",
-    detail: "All checks pass",
-    accent: "purple",
-  },
-  {
-    icon: Sparkles,
-    label: "Knowledge index",
-    value: "94%",
-    detail: "12 docs pending",
-    accent: "gold",
-  },
-];
+const metricIcons = [Activity, Clock, Shield, Sparkles] as const;
 
-export function OverviewPlatformPulse() {
+interface OverviewPlatformPulseProps {
+  metrics: OverviewPlatformMetric[];
+  isLoading?: boolean;
+}
+
+export function OverviewPlatformPulse({
+  metrics,
+  isLoading,
+}: OverviewPlatformPulseProps) {
   return (
     <DashboardCard variant="panel" accent="neutral" className="h-full" interactive={false}>
       <DashboardCardHeader title="Platform pulse" subtitle="Real-time health" />
       <div className="grid grid-cols-2 gap-3 p-4">
-        {pulseMetrics.map((metric) => {
-          const Icon = metric.icon;
+        {metrics.map((metric, index) => {
+          const Icon = metricIcons[index % metricIcons.length];
           const accent = dashboardAccents[metric.accent];
           return (
             <div
@@ -67,7 +41,7 @@ export function OverviewPlatformPulse() {
                 <span className="text-[12px] text-muted-foreground">{metric.label}</span>
               </div>
               <p className="mt-2 font-display text-xl leading-none tracking-[-0.02em] text-foreground">
-                {metric.value}
+                {isLoading ? "—" : metric.value}
               </p>
               <p className="mt-1.5 text-[11px] text-tertiary">{metric.detail}</p>
             </div>

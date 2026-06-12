@@ -52,3 +52,44 @@ export async function apiClient<T>(
 
   return response.json() as Promise<T>;
 }
+
+type UploadOptions = {
+  token?: string | null;
+  method?: "POST" | "PUT" | "PATCH";
+};
+
+export async function apiUpload<T>(
+  path: string,
+  formData: FormData,
+  options: UploadOptions = {},
+): Promise<T> {
+  const { token, method = "POST" } = options;
+
+  const response = await fetch(`${siteConfig.apiUrl}${path}`, {
+    method,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorBody: unknown;
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = undefined;
+    }
+    throw new ApiError(
+      `API request failed: ${response.status}`,
+      response.status,
+      errorBody,
+    );
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json() as Promise<T>;
+}

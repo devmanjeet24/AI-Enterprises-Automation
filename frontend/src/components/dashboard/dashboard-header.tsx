@@ -2,13 +2,13 @@
 
 import { Bell, Building2, ChevronDown, LogOut, Search, Settings, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { defaultOrganization } from "@/config/dashboard";
 import { siteConfig } from "@/config/site";
+import { logout } from "@/lib/auth/session";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { clearAuth } from "@/store/slices/auth-slice";
 import { cn } from "@/lib/utils";
 
 interface DashboardHeaderProps {
@@ -17,11 +17,12 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onMenuToggle }: DashboardHeaderProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
   const [profileOpen, setProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const orgName = user?.organization_name ?? defaultOrganization.name;
+  const orgName = user?.organization_name ?? "Your organization";
   const displayName = user
     ? `${user.first_name} ${user.last_name}`.trim() || user.email
     : "Demo User";
@@ -140,8 +141,9 @@ export function DashboardHeader({ onMenuToggle }: DashboardHeaderProps) {
                   type="button"
                   role="menuitem"
                   onClick={() => {
-                    dispatch(clearAuth());
+                    logout(dispatch);
                     setProfileOpen(false);
+                    router.replace("/login");
                   }}
                   className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
                 >

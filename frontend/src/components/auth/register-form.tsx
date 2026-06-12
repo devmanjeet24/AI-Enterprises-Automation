@@ -2,15 +2,83 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { siteConfig } from "@/config/site";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import { registerAndEstablishSession } from "@/lib/auth/session";
+import {
+  hasFieldErrors,
+  validateRegisterForm,
+  type FieldErrors,
+  type RegisterFormValues,
+} from "@/lib/auth/validation";
+import { useAppDispatch } from "@/store/hooks";
+
+const initialValues: RegisterFormValues = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  password: "",
+  organization_name: "",
+};
 
 export function RegisterForm() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState<FieldErrors<RegisterFormValues>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function updateField<K extends keyof RegisterFormValues>(
+    field: K,
+    value: RegisterFormValues[K],
+  ) {
+    setValues((current) => ({ ...current, [field]: value }));
+    setErrors((current) => {
+      if (!current[field]) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const validationErrors = validateRegisterForm(values);
+    if (hasFieldErrors(validationErrors)) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      await registerAndEstablishSession(dispatch, {
+        email: values.email.trim(),
+        password: values.password.trim(),
+        first_name: values.first_name.trim(),
+        last_name: values.last_name.trim(),
+        organization_name: values.organization_name.trim(),
+      });
+      router.replace("/overview");
+    } catch (error) {
+      setErrors({
+        form: getApiErrorMessage(error, "Unable to create account. Please try again."),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="w-full">
@@ -23,10 +91,13 @@ export function RegisterForm() {
         </p>
       </div>
 
-      <form
-        className="space-y-4"
-        onSubmit={(e) => e.preventDefault()}
-      >
+      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+        {errors.form && (
+          <p className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {errors.form}
+          </p>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="first_name" className="text-[13px] text-muted-foreground">
@@ -38,7 +109,13 @@ export function RegisterForm() {
               type="text"
               placeholder="Jane"
               autoComplete="given-name"
+              value={values.first_name}
+              onChange={(event) => updateField("first_name", event.target.value)}
+              aria-invalid={Boolean(errors.first_name)}
             />
+            {errors.first_name && (
+              <p className="text-xs text-destructive">{errors.first_name}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -51,7 +128,13 @@ export function RegisterForm() {
               type="text"
               placeholder="Smith"
               autoComplete="family-name"
+              value={values.last_name}
+              onChange={(event) => updateField("last_name", event.target.value)}
+              aria-invalid={Boolean(errors.last_name)}
             />
+            {errors.last_name && (
+              <p className="text-xs text-destructive">{errors.last_name}</p>
+            )}
           </div>
         </div>
 
@@ -65,7 +148,13 @@ export function RegisterForm() {
             type="email"
             placeholder="you@company.com"
             autoComplete="email"
+            value={values.email}
+            onChange={(event) => updateField("email", event.target.value)}
+            aria-invalid={Boolean(errors.email)}
           />
+          {errors.email && (
+            <p className="text-xs text-destructive">{errors.email}</p>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -80,6 +169,9 @@ export function RegisterForm() {
               placeholder="At least 8 characters"
               autoComplete="new-password"
               className="pr-11"
+              value={values.password}
+              onChange={(event) => updateField("password", event.target.value)}
+              aria-invalid={Boolean(errors.password)}
             />
             <button
               type="button"
@@ -94,6 +186,9 @@ export function RegisterForm() {
               )}
             </button>
           </div>
+          {errors.password && (
+            <p className="text-xs text-destructive">{errors.password}</p>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -106,11 +201,22 @@ export function RegisterForm() {
             type="text"
             placeholder="Acme Corp"
             autoComplete="organization"
+            value={values.organization_name}
+            onChange={(event) => updateField("organization_name", event.target.value)}
+            aria-invalid={Boolean(errors.organization_name)}
           />
+          {errors.organization_name && (
+            <p className="text-xs text-destructive">{errors.organization_name}</p>
+          )}
         </div>
 
-        <Button type="submit" variant="brand" className="!mt-6 h-11 w-full rounded-xl">
-          Create account
+        <Button
+          type="submit"
+          variant="brand"
+          className="!mt-6 h-11 w-full rounded-xl"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Creating account…" : "Create account"}
         </Button>
       </form>
 

@@ -2,15 +2,73 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { siteConfig } from "@/config/site";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import { loginAndEstablishSession } from "@/lib/auth/session";
+import {
+  hasFieldErrors,
+  validateLoginForm,
+  type FieldErrors,
+  type LoginFormValues,
+} from "@/lib/auth/validation";
+import { useAppDispatch } from "@/store/hooks";
+
+const initialValues: LoginFormValues = {
+  email: "",
+  password: "",
+};
 
 export function LoginForm() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState<FieldErrors<LoginFormValues>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function updateField<K extends keyof LoginFormValues>(field: K, value: LoginFormValues[K]) {
+    setValues((current) => ({ ...current, [field]: value }));
+    setErrors((current) => {
+      if (!current[field]) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const validationErrors = validateLoginForm(values);
+    if (hasFieldErrors(validationErrors)) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      await loginAndEstablishSession(
+        dispatch,
+        values.email.trim(),
+        values.password.trim(),
+      );
+      router.replace("/overview");
+    } catch (error) {
+      setErrors({ form: getApiErrorMessage(error, "Unable to sign in. Please try again.") });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="w-full">
@@ -23,10 +81,13 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form
-        className="space-y-4"
-        onSubmit={(e) => e.preventDefault()}
-      >
+      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+        {errors.form && (
+          <p className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {errors.form}
+          </p>
+        )}
+
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-[13px] text-muted-foreground">
             Email
@@ -37,7 +98,13 @@ export function LoginForm() {
             type="email"
             placeholder="you@company.com"
             autoComplete="email"
+            value={values.email}
+            onChange={(event) => updateField("email", event.target.value)}
+            aria-invalid={Boolean(errors.email)}
           />
+          {errors.email && (
+            <p className="text-xs text-destructive">{errors.email}</p>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -52,6 +119,9 @@ export function LoginForm() {
               placeholder="Enter your password"
               autoComplete="current-password"
               className="pr-11"
+              value={values.password}
+              onChange={(event) => updateField("password", event.target.value)}
+              aria-invalid={Boolean(errors.password)}
             />
             <button
               type="button"
@@ -66,10 +136,18 @@ export function LoginForm() {
               )}
             </button>
           </div>
+          {errors.password && (
+            <p className="text-xs text-destructive">{errors.password}</p>
+          )}
         </div>
 
-        <Button type="submit" variant="brand" className="!mt-6 h-11 w-full rounded-xl">
-          Sign in
+        <Button
+          type="submit"
+          variant="brand"
+          className="!mt-6 h-11 w-full rounded-xl"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
 

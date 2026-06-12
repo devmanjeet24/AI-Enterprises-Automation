@@ -2,13 +2,18 @@
 
 import { ArrowUpRight, Minus } from "lucide-react";
 
-import { overviewKpis } from "@/config/dashboard";
+import type { OverviewKpiItem } from "@/lib/dashboard/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
 import { DashboardCard, DashboardSectionHeader } from "../dashboard-card";
 
-export function OverviewKpiGrid() {
+interface OverviewKpiGridProps {
+  kpis: OverviewKpiItem[];
+  isLoading?: boolean;
+}
+
+export function OverviewKpiGrid({ kpis, isLoading }: OverviewKpiGridProps) {
   return (
     <section className="px-6 md:px-8">
       <DashboardSectionHeader
@@ -17,7 +22,7 @@ export function OverviewKpiGrid() {
         description="Platform-wide activity and efficiency at a glance."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {overviewKpis.map((kpi) => {
+        {kpis.map((kpi) => {
           const accent = dashboardAccents[kpi.accent];
           return (
             <DashboardCard
@@ -35,7 +40,7 @@ export function OverviewKpiGrid() {
                 )}
               </div>
               <p className="mt-3 font-display text-[2rem] leading-none tracking-[-0.02em] text-foreground">
-                {kpi.value}
+                {isLoading ? "—" : kpi.value}
               </p>
               <p
                 className={cn(
