@@ -4,8 +4,6 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { AuthDivider } from "@/components/auth/auth-divider";
-import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,9 +23,6 @@ export function LoginForm() {
         </p>
       </div>
 
-      <AuthSocialButtons />
-      <AuthDivider />
-
       <form
         className="space-y-4"
         onSubmit={(e) => e.preventDefault()}
@@ -38,6 +33,7 @@ export function LoginForm() {
           </Label>
           <Input
             id="email"
+            name="email"
             type="email"
             placeholder="you@company.com"
             autoComplete="email"
@@ -51,6 +47,7 @@ export function LoginForm() {
           <div className="relative">
             <Input
               id="password"
+              name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               autoComplete="current-password"
@@ -69,22 +66,6 @@ export function LoginForm() {
               )}
             </button>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-4 pt-1">
-          <label className="flex cursor-pointer items-center gap-2.5 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              className="size-4 rounded border-border bg-white/[0.04] accent-brand"
-            />
-            Remember me
-          </label>
-          <Link
-            href="#"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Forgot password?
-          </Link>
         </div>
 
         <Button type="submit" variant="brand" className="!mt-6 h-11 w-full rounded-xl">

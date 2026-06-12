@@ -22,10 +22,11 @@ const PANEL_PATH = [
 
 export function AuthImagePanel() {
   return (
-    <div className="relative z-10 w-full max-w-[min(100%,380px)]">
+    <div className="absolute inset-0">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="h-auto w-full drop-shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
+        className="h-full w-full"
+        preserveAspectRatio="xMidYMid slice"
         role="img"
         aria-label="AI robotic arm interacting with enterprise data visualization"
       >

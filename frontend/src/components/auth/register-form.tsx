@@ -4,8 +4,6 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { AuthDivider } from "@/components/auth/auth-divider";
-import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,23 +23,36 @@ export function RegisterForm() {
         </p>
       </div>
 
-      <AuthSocialButtons />
-      <AuthDivider />
-
       <form
         className="space-y-4"
         onSubmit={(e) => e.preventDefault()}
       >
-        <div className="space-y-1.5">
-          <Label htmlFor="name" className="text-[13px] text-muted-foreground">
-            Full name
-          </Label>
-          <Input
-            id="name"
-            type="text"
-            placeholder="Jane Smith"
-            autoComplete="name"
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="first_name" className="text-[13px] text-muted-foreground">
+              First name
+            </Label>
+            <Input
+              id="first_name"
+              name="first_name"
+              type="text"
+              placeholder="Jane"
+              autoComplete="given-name"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="last_name" className="text-[13px] text-muted-foreground">
+              Last name
+            </Label>
+            <Input
+              id="last_name"
+              name="last_name"
+              type="text"
+              placeholder="Smith"
+              autoComplete="family-name"
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -50,6 +61,7 @@ export function RegisterForm() {
           </Label>
           <Input
             id="email"
+            name="email"
             type="email"
             placeholder="you@company.com"
             autoComplete="email"
@@ -63,8 +75,9 @@ export function RegisterForm() {
           <div className="relative">
             <Input
               id="password"
+              name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Create a password"
+              placeholder="At least 8 characters"
               autoComplete="new-password"
               className="pr-11"
             />
@@ -81,6 +94,19 @@ export function RegisterForm() {
               )}
             </button>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="organization_name" className="text-[13px] text-muted-foreground">
+            Company / Organization name
+          </Label>
+          <Input
+            id="organization_name"
+            name="organization_name"
+            type="text"
+            placeholder="Acme Corp"
+            autoComplete="organization"
+          />
         </div>
 
         <Button type="submit" variant="brand" className="!mt-6 h-11 w-full rounded-xl">

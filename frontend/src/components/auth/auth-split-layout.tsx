@@ -38,9 +38,9 @@ export function AuthSplitLayout({ children }: AuthSplitLayoutProps) {
             </div>
 
             {/* Right — image panel (45%) */}
-            <div className="relative flex w-[45%] items-center justify-center border-l border-white/[0.06] bg-white/[0.02] px-8 py-11 sm:px-9 sm:py-12 lg:px-10 lg:py-14">
+            <div className="relative w-[45%] overflow-hidden border-l border-white/[0.06]">
               <div
-                className="pointer-events-none absolute inset-0"
+                className="pointer-events-none absolute inset-0 z-10"
                 aria-hidden
                 style={{
                   background:
