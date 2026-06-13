@@ -12,7 +12,9 @@ import { useUserPermissions } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/api/client";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
+import { isAccessDeniedError } from "@/lib/research-hub/access";
 
+import { ResearchHubAccessDenied } from "./research-hub-access-denied";
 import { ResearchHubError } from "./research-hub-error";
 import { ResearchProjectDetailSkeleton } from "./research-hub-skeleton";
 import { ResearchProjectActions } from "./research-project-actions";
@@ -87,6 +89,13 @@ export function ResearchProjectDetailPage({ projectId }: ResearchProjectDetailPa
     if (projectError instanceof ApiError && projectError.status === 404) {
       notFound();
     }
+    if (isAccessDeniedError(projectError)) {
+      return (
+        <div className="px-6 py-8 md:px-8">
+          <ResearchHubAccessDenied message="You do not have permission to view this research project." />
+        </div>
+      );
+    }
     return (
       <div className="px-6 py-8 md:px-8">
         <ResearchHubError
@@ -137,6 +146,7 @@ export function ResearchProjectDetailPage({ projectId }: ResearchProjectDetailPa
               <ResearchProjectRunPanel
                 project={project}
                 canExecute={canExecute}
+                canWrite={canWrite}
                 onRunSuccess={handleRunSuccess}
               />
             </div>

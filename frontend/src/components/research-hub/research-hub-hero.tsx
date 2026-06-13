@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 interface ResearchHubHeroProps {
   projects: ResearchProject[];
   analytics?: ResearchAnalytics | null;
+  analyticsAvailable?: boolean;
   canCreate?: boolean;
   onCreateClick: () => void;
 }
@@ -18,6 +19,7 @@ interface ResearchHubHeroProps {
 export function ResearchHubHero({
   projects,
   analytics,
+  analyticsAvailable = Boolean(analytics),
   canCreate = true,
   onCreateClick,
 }: ResearchHubHeroProps) {
@@ -27,7 +29,11 @@ export function ResearchHubHero({
   const heroStats = [
     { icon: Search, label: "Total projects", value: stats.total },
     { icon: CheckCircle2, label: "Active", value: stats.active },
-    { icon: ClipboardList, label: "Reports", value: stats.completedReports },
+    {
+      icon: ClipboardList,
+      label: "Reports",
+      value: analyticsAvailable ? stats.completedReports : null,
+    },
   ] as const;
 
   return (
@@ -61,7 +67,7 @@ export function ResearchHubHero({
               </div>
               <div>
                 <p className="font-display text-xl leading-none tracking-[-0.02em] text-foreground">
-                  {value}
+                  {value == null ? "—" : value}
                 </p>
                 <p className="mt-1 text-[12px] text-tertiary">{label}</p>
               </div>

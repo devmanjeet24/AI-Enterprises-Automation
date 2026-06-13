@@ -9,3 +9,7 @@ export function useAuthToken(): string | null {
 export function useUserPermissions(): string[] {
   return useAppSelector((state) => state.auth.user?.permissions ?? []);
 }
+
+export function useAuthUser() {
+  return useAppSelector((state) => state.auth.user);
+}

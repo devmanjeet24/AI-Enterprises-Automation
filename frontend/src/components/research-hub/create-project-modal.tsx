@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ const templateIcons: Record<ResearchTemplateType, typeof Search> = {
 };
 
 export function CreateProjectModal({ open, onClose }: CreateProjectModalProps) {
+  const router = useRouter();
   const toast = useToast();
   const createMutation = useCreateResearchProject();
   const { data: templates = [], isLoading: isLoadingTemplates } =
@@ -106,6 +108,7 @@ export function CreateProjectModal({ open, onClose }: CreateProjectModalProps) {
       toast.success(`"${project.name}" created successfully.`);
       resetForm();
       onClose();
+      router.push(`/research-hub/${project.id}`);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to create research project."));
     }

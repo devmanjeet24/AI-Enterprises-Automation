@@ -25,7 +25,7 @@ export const dashboardNavItems: DashboardNavItem[] = [
   { label: "Agent Teams", href: "/agent-teams", icon: Network, enabled: true },
   { label: "Workflows", href: "/workflows", icon: GitBranch, enabled: true },
   { label: "Research Hub", href: "/research-hub", icon: Search, enabled: true },
-  { label: "Browser Automation", href: "/browser-automation", icon: Globe, enabled: false },
+  { label: "Browser Automation", href: "/browser-automation", icon: Globe, enabled: true },
   { label: "Analytics", href: "/analytics", icon: BarChart3, enabled: false },
 ];
 
@@ -33,5 +33,5 @@ export const dashboardSettingsItem: DashboardNavItem = {
   label: "Settings",
   href: "/settings",
   icon: Settings,
-  enabled: false,
+  enabled: true,
 };

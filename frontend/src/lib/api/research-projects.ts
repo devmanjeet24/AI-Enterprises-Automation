@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api/client";
+import { apiClient, apiDownload, triggerBrowserDownload } from "@/lib/api/client";
 import type { AgentTaskStatus } from "@/lib/agent-teams/types";
 import type {
   CreateResearchProjectInput,
@@ -146,6 +146,30 @@ export function getResearchReport(
     `${RESEARCH_PROJECTS_BASE}/${projectId}/reports/${reportId}`,
     { method: "GET", token },
   );
+}
+
+export async function exportResearchReportMarkdown(
+  token: string,
+  projectId: string,
+  reportId: string,
+): Promise<void> {
+  const { blob, filename } = await apiDownload(
+    `${RESEARCH_PROJECTS_BASE}/${projectId}/reports/${reportId}/export/markdown`,
+    { token },
+  );
+  triggerBrowserDownload(blob, filename ?? `research-report-v${reportId}.md`);
+}
+
+export async function exportResearchReportPdf(
+  token: string,
+  projectId: string,
+  reportId: string,
+): Promise<void> {
+  const { blob, filename } = await apiDownload(
+    `${RESEARCH_PROJECTS_BASE}/${projectId}/reports/${reportId}/export/pdf`,
+    { token },
+  );
+  triggerBrowserDownload(blob, filename ?? `research-report-v${reportId}.pdf`);
 }
 
 export type { AgentTaskStatus, ListResearchReportsParams };
