@@ -56,3 +56,18 @@ def health() -> dict[str, str]:
         "environment": settings.environment,
         "version": settings.app_version,
     }
+
+
+def main() -> None:
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
+    )
+
+
+if __name__ == "__main__":
+    main()
