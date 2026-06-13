@@ -1,12 +1,17 @@
 "use client";
 
-import { Loader2, Play, Search } from "lucide-react";
+import { AlertCircle, Loader2, Play, Search } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { useRunResearchProject } from "@/hooks/use-research-projects";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import type { ResearchProjectDetail } from "@/lib/research-hub/types";
+import {
+  canRunResearchProject,
+  getResearchRunBlockedMessage,
+} from "@/lib/research-hub/run-messages";
+import type { ResearchProjectDetail, ResearchReport } from "@/lib/research-hub/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -14,28 +19,48 @@ import { cn } from "@/lib/utils";
 interface ResearchProjectRunPanelProps {
   project: ResearchProjectDetail;
   canExecute?: boolean;
+  canWrite?: boolean;
   onRunSuccess?: () => void;
 }
 
 export function ResearchProjectRunPanel({
   project,
   canExecute = true,
+  canWrite = true,
   onRunSuccess,
 }: ResearchProjectRunPanelProps) {
   const accent = dashboardAccents.purple;
   const toast = useToast();
   const runMutation = useRunResearchProject(project.id);
+  const [lastRunResult, setLastRunResult] = useState<ResearchReport | null>(null);
 
-  const canRun =
-    canExecute &&
-    project.is_active &&
-    project.status === "active" &&
-    Boolean(project.research_brief?.trim());
+  const canRun = canRunResearchProject(project, canExecute);
+  const blockedMessage = getResearchRunBlockedMessage(project, {
+    canExecute,
+    canWrite,
+  });
 
   const handleRun = async () => {
+    setLastRunResult(null);
     try {
       const report = await runMutation.mutateAsync({});
-      toast.success(`Research run v${report.version_number} completed.`);
+      setLastRunResult(report);
+
+      if (report.status === "completed") {
+        toast.success(`Research run v${report.version_number} completed.`);
+        onRunSuccess?.();
+        return;
+      }
+
+      if (report.status === "failed") {
+        toast.error(
+          report.error_message ?? `Research run v${report.version_number} failed.`,
+        );
+        onRunSuccess?.();
+        return;
+      }
+
+      toast.success(`Research run v${report.version_number} started.`);
       onRunSuccess?.();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to run research."));
@@ -49,17 +74,48 @@ export function ResearchProjectRunPanel({
       {!canRun && (
         <DashboardCard variant="panel" accent="purple" interactive={false} className="p-5">
           <p className="text-[14px] font-medium text-foreground">Research unavailable</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            {!canExecute
-              ? "You do not have permission to execute research projects."
-              : project.status !== "active"
-                ? "Set project status to active before running research."
-                : !project.is_active
-                  ? "Enable this project to run research."
-                  : "Add a research brief in the overview tab before running."}
-          </p>
+          <p className="mt-1 text-[13px] text-muted-foreground">{blockedMessage}</p>
         </DashboardCard>
       )}
+
+      {lastRunResult?.status === "failed" && (
+        <DashboardCard
+          variant="panel"
+          accent="purple"
+          interactive={false}
+          className="border-destructive/20 p-5"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
+            <div>
+              <p className="text-[14px] font-medium text-foreground">
+                Run v{lastRunResult.version_number} failed
+              </p>
+              <p className="mt-1 text-[13px] text-destructive">
+                {lastRunResult.error_message ?? "The agent team could not complete this run."}
+              </p>
+            </div>
+          </div>
+        </DashboardCard>
+      )}
+
+      {lastRunResult &&
+        (lastRunResult.status === "pending" || lastRunResult.status === "in_progress") && (
+          <DashboardCard variant="panel" accent="purple" interactive={false} className="p-5">
+            <div className="flex items-center gap-3">
+              <Loader2 className="size-4 animate-spin text-brand" />
+              <div>
+                <p className="text-[14px] font-medium text-foreground">
+                  Run v{lastRunResult.version_number} in progress
+                </p>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  Agent team is executing template steps. Reports and history will update
+                  automatically.
+                </p>
+              </div>
+            </div>
+          </DashboardCard>
+        )}
 
       <DashboardCard variant="panel" accent="purple" interactive={false} className="p-6">
         <div className="flex items-start gap-3">

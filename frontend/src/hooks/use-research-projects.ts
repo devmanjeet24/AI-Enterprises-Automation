@@ -6,6 +6,8 @@ import { getAgentTeam } from "@/lib/api/agent-teams";
 import {
   createResearchProject,
   deleteResearchProject,
+  exportResearchReportMarkdown,
+  exportResearchReportPdf,
   getResearchAnalytics,
   getResearchProject,
   getResearchReport,
@@ -23,13 +25,27 @@ import { researchProjectKeys } from "@/lib/research-hub/query-keys";
 import type {
   CreateResearchProjectInput,
   ListResearchReportsParams,
+  ResearchExecutionHistory,
   ResearchProjectDetail,
   ResearchProjectStatus,
+  ResearchReportSummary,
   RunResearchProjectInput,
   UpdateResearchProjectInput,
 } from "@/lib/research-hub/types";
 
 import { useAuthToken } from "./use-auth-token";
+
+const REPORT_POLL_MS = 3000;
+
+function hasInProgressReport(
+  reports: ResearchReportSummary[] | ResearchExecutionHistory[] | undefined,
+): boolean {
+  return (
+    reports?.some(
+      (report) => report.status === "pending" || report.status === "in_progress",
+    ) ?? false
+  );
+}
 
 export function useResearchTemplates() {
   const token = useAuthToken();
@@ -113,6 +129,8 @@ export function useProjectResearchReports(projectId: string) {
     queryKey: researchProjectKeys.projectReports(projectId),
     queryFn: () => listProjectResearchReports(token!, projectId),
     enabled: Boolean(token) && Boolean(projectId),
+    refetchInterval: (query) =>
+      hasInProgressReport(query.state.data) ? REPORT_POLL_MS : false,
   });
 }
 
@@ -123,6 +141,8 @@ export function useResearchExecutions(projectId: string) {
     queryKey: researchProjectKeys.executions(projectId),
     queryFn: () => listProjectResearchExecutions(token!, projectId),
     enabled: Boolean(token) && Boolean(projectId),
+    refetchInterval: (query) =>
+      hasInProgressReport(query.state.data) ? REPORT_POLL_MS : false,
   });
 }
 
@@ -133,6 +153,12 @@ export function useResearchReport(projectId: string, reportId: string) {
     queryKey: researchProjectKeys.reportDetail(projectId, reportId),
     queryFn: () => getResearchReport(token!, projectId, reportId),
     enabled: Boolean(token) && Boolean(projectId) && Boolean(reportId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "pending" || status === "in_progress"
+        ? REPORT_POLL_MS
+        : false;
+    },
   });
 }
 
@@ -206,12 +232,29 @@ export function useRunResearchProject(projectId: string) {
       queryClient.invalidateQueries({
         queryKey: researchProjectKeys.executions(projectId),
       });
-      queryClient.invalidateQueries({
-        queryKey: researchProjectKeys.reportDetail(projectId, report.id),
-      });
+      queryClient.setQueryData(
+        researchProjectKeys.reportDetail(projectId, report.id),
+        report,
+      );
       queryClient.invalidateQueries({ queryKey: researchProjectKeys.reports() });
       queryClient.invalidateQueries({ queryKey: researchProjectKeys.analytics() });
     },
+  });
+}
+
+export function useExportResearchReportMarkdown(projectId: string, reportId: string) {
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationFn: () => exportResearchReportMarkdown(token!, projectId, reportId),
+  });
+}
+
+export function useExportResearchReportPdf(projectId: string, reportId: string) {
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationFn: () => exportResearchReportPdf(token!, projectId, reportId),
   });
 }
 

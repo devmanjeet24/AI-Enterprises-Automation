@@ -11,6 +11,10 @@ import {
   useUpdateResearchProject,
 } from "@/hooks/use-research-projects";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import {
+  canRunResearchProject,
+  getResearchRunBlockedMessage,
+} from "@/lib/research-hub/run-messages";
 import type { ResearchProjectDetail } from "@/lib/research-hub/types";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -38,11 +42,11 @@ export function ResearchProjectActions({
     null,
   );
 
-  const canRun =
-    canExecute &&
-    project.is_active &&
-    project.status === "active" &&
-    Boolean(project.research_brief?.trim());
+  const canRun = canRunResearchProject(project, canExecute);
+  const runBlockedMessage = getResearchRunBlockedMessage(project, {
+    canExecute,
+    canWrite,
+  });
 
   const handleActivate = async () => {
     setActiveAction("activate");
@@ -109,15 +113,9 @@ export function ResearchProjectActions({
             Run research
           </Button>
           <p className="text-[12px] text-muted-foreground">
-            {!canExecute
-              ? "You do not have permission to run research."
-              : canRun
-                ? "Execute the methodology template through the assigned agent team."
-                : project.status !== "active"
-                  ? "Set project status to active before running."
-                  : !project.is_active
-                    ? "Enable this project to run research."
-                    : "Add a research brief before running."}
+            {canRun
+              ? "Execute the methodology template through the assigned agent team."
+              : runBlockedMessage}
           </p>
         </div>
       )}
@@ -138,6 +136,15 @@ export function ResearchProjectActions({
             )}
             Activate project
           </Button>
+        </div>
+      )}
+
+      {!canWrite && project.status === "draft" && canExecute && (
+        <div className="mt-4 border-t border-white/[0.06] pt-4">
+          <p className="text-[12px] text-muted-foreground">
+            This project is in draft. You need write access to activate it before running
+            research.
+          </p>
         </div>
       )}
 

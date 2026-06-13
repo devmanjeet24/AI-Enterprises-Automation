@@ -10,11 +10,13 @@ import {
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
+import { isAccessDeniedError } from "@/lib/research-hub/access";
 import type { ResearchProjectStatus } from "@/lib/research-hub/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
 import { CreateProjectModal } from "./create-project-modal";
+import { ResearchHubAccessDenied } from "./research-hub-access-denied";
 import { ResearchHubEmptyState } from "./research-hub-empty-state";
 import { ResearchHubError } from "./research-hub-error";
 import { ResearchHubHero } from "./research-hub-hero";
@@ -50,6 +52,8 @@ export function ResearchHubPage() {
   const {
     data: analytics,
     isLoading: isLoadingAnalytics,
+    isError: isAnalyticsError,
+    error: analyticsError,
     refetch: refetchAnalytics,
   } = useResearchAnalytics();
 
@@ -58,20 +62,44 @@ export function ResearchHubPage() {
     return projects.filter((project) => project.status === statusFilter);
   }, [projects, statusFilter]);
 
-  const errorMessage = isProjectsError
+  const projectsAccessDenied = isProjectsError && isAccessDeniedError(projectsError);
+  const analyticsErrorMessage = isAnalyticsError
+    ? getApiErrorMessage(analyticsError, "Failed to load research analytics.")
+    : null;
+  const projectsErrorMessage = isProjectsError
     ? getApiErrorMessage(projectsError, "Failed to load research projects.")
     : null;
 
-  const handleRetry = () => {
+  const handleRetryProjects = () => {
     void refetchProjects();
+  };
+
+  const handleRetryAnalytics = () => {
     void refetchAnalytics();
   };
+
+  if (isLoadingProjects) {
+    return (
+      <div className="pb-10 md:pb-12">
+        <ResearchHubSkeleton />
+      </div>
+    );
+  }
+
+  if (projectsAccessDenied) {
+    return (
+      <div className="px-6 py-8 md:px-8">
+        <ResearchHubAccessDenied />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-10 md:pb-12">
       <ResearchHubHero
         projects={projects}
         analytics={analytics}
+        analyticsAvailable={!isAnalyticsError && Boolean(analytics)}
         canCreate={canCreate}
         onCreateClick={() => setCreateOpen(true)}
       />
@@ -85,8 +113,11 @@ export function ResearchHubPage() {
           />
           <ResearchHubStats
             projects={projects}
-            analytics={analytics}
+            analytics={isAnalyticsError ? undefined : analytics}
             isLoading={isLoadingAnalytics}
+            isError={isAnalyticsError}
+            errorMessage={analyticsErrorMessage}
+            onRetry={handleRetryAnalytics}
           />
         </section>
 
@@ -97,13 +128,11 @@ export function ResearchHubPage() {
             description="Define briefs, pick methodology templates, and run structured research with agent teams."
           />
 
-          {isLoadingProjects ? (
-            <ResearchHubSkeleton />
-          ) : isProjectsError ? (
+          {isProjectsError ? (
             <ResearchHubError
               title="Failed to load research projects"
-              message={errorMessage!}
-              onRetry={handleRetry}
+              message={projectsErrorMessage!}
+              onRetry={handleRetryProjects}
             />
           ) : projects.length === 0 ? (
             <ResearchHubEmptyState

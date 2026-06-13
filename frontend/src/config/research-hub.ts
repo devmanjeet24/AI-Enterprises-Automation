@@ -111,6 +111,7 @@ export function computeResearchStats(
       totalReports: analytics.total_reports,
       completedReports: analytics.completed_reports,
       recentRuns: analytics.recent_runs_7d,
+      reportsAvailable: true as const,
     };
   }
 
@@ -123,8 +124,9 @@ export function computeResearchStats(
     active: activeProjects,
     draft: projects.filter((project) => project.status === "draft").length,
     archived: projects.filter((project) => project.status === "archived").length,
-    totalReports: 0,
-    completedReports: 0,
-    recentRuns: 0,
+    totalReports: null,
+    completedReports: null,
+    recentRuns: null,
+    reportsAvailable: false as const,
   };
 }

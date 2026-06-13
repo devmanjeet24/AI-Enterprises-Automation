@@ -8,49 +8,74 @@ import type { ResearchAnalytics, ResearchProject } from "@/lib/research-hub/type
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
+import { ResearchHubError } from "./research-hub-error";
 import { ResearchHubStatsSkeleton } from "./research-hub-skeleton";
 
 interface ResearchHubStatsProps {
   projects: ResearchProject[];
   analytics?: ResearchAnalytics | null;
   isLoading?: boolean;
+  isError?: boolean;
+  errorMessage?: string | null;
+  onRetry?: () => void;
+}
+
+function formatMetricValue(value: number | null): string {
+  return value == null ? "—" : String(value);
 }
 
 export function ResearchHubStats({
   projects,
   analytics,
   isLoading = false,
+  isError = false,
+  errorMessage,
+  onRetry,
 }: ResearchHubStatsProps) {
   if (isLoading) return <ResearchHubStatsSkeleton />;
+
+  if (isError) {
+    return (
+      <ResearchHubError
+        title="Failed to load research analytics"
+        message={errorMessage ?? "Could not load portfolio metrics."}
+        onRetry={onRetry}
+      />
+    );
+  }
 
   const computed = computeResearchStats(projects, analytics);
 
   const stats = [
     {
       label: "Total projects",
-      value: computed.total,
+      value: formatMetricValue(computed.total),
       detail: "Across your organization",
       icon: Search,
       accent: "purple" as const,
     },
     {
       label: "Active projects",
-      value: computed.active,
+      value: formatMetricValue(computed.active),
       detail: `${computed.draft} in draft`,
       icon: CheckCircle2,
       accent: "emerald" as const,
     },
     {
       label: "Reports completed",
-      value: computed.completedReports,
-      detail: `${computed.totalReports} total reports`,
+      value: formatMetricValue(computed.completedReports),
+      detail: computed.reportsAvailable
+        ? `${computed.totalReports} total reports`
+        : "Analytics unavailable",
       icon: FileText,
       accent: "blue" as const,
     },
     {
       label: "Runs (7 days)",
-      value: computed.recentRuns,
-      detail: "Recent research executions",
+      value: formatMetricValue(computed.recentRuns),
+      detail: computed.reportsAvailable
+        ? "Recent research executions"
+        : "Analytics unavailable",
       icon: ClipboardList,
       accent: "gold" as const,
     },

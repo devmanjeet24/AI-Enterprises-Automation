@@ -33,6 +33,11 @@ const navAccents: Record<string, string> = {
   "/settings": "text-muted-foreground",
 };
 
+function isNavItemActive(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  return pathname.startsWith(`${href}/`);
+}
+
 function SidebarNavItem({
   item,
   isCollapsed,
@@ -44,7 +49,7 @@ function SidebarNavItem({
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const isActive = item.enabled && pathname === item.href;
+  const isActive = item.enabled && isNavItemActive(pathname, item.href);
   const Icon = item.icon;
   const accentClass = navAccents[item.href] ?? "text-muted-foreground";
 

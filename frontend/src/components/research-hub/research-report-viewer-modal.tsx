@@ -1,15 +1,20 @@
 "use client";
 
-import { FileText, Loader2, X } from "lucide-react";
+import { FileDown, FileText, Loader2, RefreshCw, X } from "lucide-react";
 import { useEffect } from "react";
 
 import { TaskStatusBadge } from "@/components/agent-teams/task-status-badge";
 import { Button } from "@/components/ui/button";
-import { useResearchReport } from "@/hooks/use-research-projects";
+import {
+  useExportResearchReportMarkdown,
+  useExportResearchReportPdf,
+  useResearchReport,
+} from "@/hooks/use-research-projects";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import type { ResearchReportSummary } from "@/lib/research-hub/types";
 import { formatDateTime } from "@/config/research-hub";
 import { dashboardAccents } from "@/lib/dashboard-accents";
+import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
 
 interface ResearchReportViewerModalProps {
@@ -24,6 +29,7 @@ export function ResearchReportViewerModal({
   onClose,
 }: ResearchReportViewerModalProps) {
   const accent = dashboardAccents.purple;
+  const toast = useToast();
   const reportId = reportSummary?.id ?? "";
 
   const {
@@ -31,7 +37,14 @@ export function ResearchReportViewerModal({
     isLoading,
     isError,
     error,
+    refetch,
   } = useResearchReport(projectId, reportId);
+
+  const exportMarkdown = useExportResearchReportMarkdown(projectId, reportId);
+  const exportPdf = useExportResearchReportPdf(projectId, reportId);
+
+  const canExport =
+    report?.status === "completed" && Boolean(report.final_output?.trim());
 
   useEffect(() => {
     if (!reportSummary) return;
@@ -45,6 +58,26 @@ export function ResearchReportViewerModal({
       document.body.style.overflow = "";
     };
   }, [reportSummary, onClose]);
+
+  const handleExportMarkdown = async () => {
+    try {
+      await exportMarkdown.mutateAsync();
+      toast.success("Markdown report downloaded.");
+    } catch (exportError) {
+      toast.error(getApiErrorMessage(exportError, "Failed to export Markdown report."));
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      await exportPdf.mutateAsync();
+      toast.success("PDF report downloaded.");
+    } catch (exportError) {
+      toast.error(getApiErrorMessage(exportError, "Failed to export PDF report."));
+    }
+  };
+
+  const isExporting = exportMarkdown.isPending || exportPdf.isPending;
 
   if (!reportSummary) return null;
 
@@ -100,9 +133,41 @@ export function ResearchReportViewerModal({
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={onClose}>
-            <X className="size-4" />
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            {canExport && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={isExporting}
+                  onClick={handleExportMarkdown}
+                >
+                  {exportMarkdown.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <FileDown className="size-3.5" />
+                  )}
+                  Markdown
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={isExporting}
+                  onClick={handleExportPdf}
+                >
+                  {exportPdf.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <FileDown className="size-3.5" />
+                  )}
+                  PDF
+                </Button>
+              </>
+            )}
+            <Button variant="ghost" size="icon" className="size-8" onClick={onClose}>
+              <X className="size-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
@@ -121,11 +186,41 @@ export function ResearchReportViewerModal({
               <p className="mt-2 text-[13px] text-muted-foreground">
                 {getApiErrorMessage(error, "Could not load this report.")}
               </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-4"
+                onClick={() => refetch()}
+              >
+                <RefreshCw className="size-3.5" />
+                Try again
+              </Button>
             </div>
           )}
 
           {report && (
             <div className="space-y-6">
+              {(report.status === "pending" || report.status === "in_progress") && (
+                <div className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+                  <Loader2 className="size-4 animate-spin text-brand" />
+                  <p className="text-[13px] text-muted-foreground">
+                    This report is still running. Content will refresh automatically.
+                  </p>
+                </div>
+              )}
+
+              {!canExport && report.status === "completed" && (
+                <p className="text-[12px] text-muted-foreground">
+                  Export is available once a final output is generated.
+                </p>
+              )}
+
+              {!canExport && report.status !== "completed" && report.status !== "pending" && report.status !== "in_progress" && (
+                <p className="text-[12px] text-muted-foreground">
+                  Export is available for completed reports with output.
+                </p>
+              )}
+
               {report.final_output ? (
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-5 py-4">
                   <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-tertiary">
