@@ -15,6 +15,13 @@ if TYPE_CHECKING:
     from app.models.ai_employee_conversation import AIEmployeeConversation
     from app.models.ai_employee_document import AIEmployeeDocument
     from app.models.ai_employee_tool import AIEmployeeTool
+    from app.models.support_ticket import SupportTicket
+    from app.models.support_ticket_message import SupportTicketMessage
+    from app.models.voice_agent import VoiceAgent
+    from app.models.voice_transcript import VoiceTranscript
+    from app.models.omnichannel_channel import OmnichannelChannel
+    from app.models.omnichannel_conversation import OmnichannelConversation
+    from app.models.omnichannel_message import OmnichannelMessage
     from app.models.organization import Organization
     from app.models.user import User
 
@@ -76,4 +83,26 @@ class AIEmployee(Base, TimestampMixin):
     )
     task_executions: Mapped[list["AgentTaskExecution"]] = relationship(
         back_populates="ai_employee",
+    )
+    assigned_support_tickets: Mapped[list["SupportTicket"]] = relationship(
+        back_populates="assigned_ai_employee",
+    )
+    support_ticket_messages: Mapped[list["SupportTicketMessage"]] = relationship(
+        back_populates="author_ai_employee",
+    )
+    voice_agents: Mapped[list["VoiceAgent"]] = relationship(
+        back_populates="ai_employee",
+        cascade="all, delete-orphan",
+    )
+    voice_transcripts: Mapped[list["VoiceTranscript"]] = relationship(
+        back_populates="author_ai_employee",
+    )
+    omnichannel_channels: Mapped[list["OmnichannelChannel"]] = relationship(
+        back_populates="ai_employee",
+    )
+    assigned_omnichannel_conversations: Mapped[list["OmnichannelConversation"]] = relationship(
+        back_populates="assigned_ai_employee",
+    )
+    omnichannel_messages: Mapped[list["OmnichannelMessage"]] = relationship(
+        back_populates="author_ai_employee",
     )

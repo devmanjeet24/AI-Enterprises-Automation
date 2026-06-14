@@ -10,11 +10,13 @@ import { useEmployee } from "@/hooks/use-ai-employees";
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/api/client";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/ai-employees/access";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { getEmployeeInitials } from "@/config/ai-employees";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
+import { AiEmployeesAccessDenied } from "./ai-employees-access-denied";
 import { AiEmployeesError } from "./ai-employees-error";
 import { EmployeeChatPanel } from "./employee-chat-panel";
 import { EmployeeDetailActions } from "./employee-detail-actions";
@@ -53,6 +55,13 @@ export function AiEmployeeDetailPage({ employeeId }: AiEmployeeDetailPageProps) 
   if (isError) {
     if (error instanceof ApiError && error.status === 404) {
       notFound();
+    }
+    if (isAccessDeniedError(error)) {
+      return (
+        <div className="px-6 py-8 md:px-8">
+          <AiEmployeesAccessDenied message="You do not have permission to view this AI employee." />
+        </div>
+      );
     }
     return (
       <div className="px-6 py-8 md:px-8">

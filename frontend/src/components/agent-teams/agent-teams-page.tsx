@@ -6,10 +6,12 @@ import { DashboardSectionHeader } from "@/components/dashboard/dashboard-card";
 import { useAgentTeamsOverview } from "@/hooks/use-agent-teams";
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/agent-teams/access";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
+import { AgentTeamsAccessDenied } from "./agent-teams-access-denied";
 import { AgentTeamsError } from "./agent-teams-error";
 import { AgentTeamsHero } from "./agent-teams-hero";
 import { AgentTeamsStats } from "./agent-teams-stats";
@@ -43,9 +45,18 @@ export function AgentTeamsPage() {
     return teams.filter((team) => !team.is_active);
   }, [teams, statusFilter]);
 
+  const accessDenied = isError && isAccessDeniedError(error);
   const errorMessage = isError
     ? getApiErrorMessage(error, "Failed to load agent teams.")
     : null;
+
+  if (accessDenied) {
+    return (
+      <div className="px-6 py-16 md:px-8">
+        <AgentTeamsAccessDenied />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-10 md:pb-12">

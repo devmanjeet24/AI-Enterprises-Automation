@@ -9,7 +9,7 @@ export const siteConfig = {
     docs: "/docs",
     login: "/login",
     register: "/register",
-    demo: "/demo",
+    demo: "/register",
   },
   nav: [
     { label: "Platform", href: "#platform" },

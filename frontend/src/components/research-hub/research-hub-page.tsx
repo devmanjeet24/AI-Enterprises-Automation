@@ -20,6 +20,7 @@ import { ResearchHubAccessDenied } from "./research-hub-access-denied";
 import { ResearchHubEmptyState } from "./research-hub-empty-state";
 import { ResearchHubError } from "./research-hub-error";
 import { ResearchHubHero } from "./research-hub-hero";
+import { ResearchHubOrgReports } from "./research-hub-org-reports";
 import { ResearchHubSkeleton } from "./research-hub-skeleton";
 import { ResearchHubStats } from "./research-hub-stats";
 import { ResearchProjectCardGrid } from "./research-project-card-grid";
@@ -118,6 +119,18 @@ export function ResearchHubPage() {
             isError={isAnalyticsError}
             errorMessage={analyticsErrorMessage}
             onRetry={handleRetryAnalytics}
+          />
+        </section>
+
+        <section className="px-6 md:px-8">
+          <DashboardSectionHeader
+            eyebrow="Reports"
+            title="Organization reports"
+            description="Browse versioned research outputs across all projects. Filter by status or project, then open a report or jump to its project."
+          />
+          <ResearchHubOrgReports
+            projects={projects}
+            projectsLoading={isLoadingProjects}
           />
         </section>
 

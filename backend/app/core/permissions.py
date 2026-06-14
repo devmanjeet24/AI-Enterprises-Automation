@@ -67,6 +67,33 @@ BROWSER_TASKS_WRITE = "browser_tasks:write"
 BROWSER_TASKS_DELETE = "browser_tasks:delete"
 BROWSER_TASKS_EXECUTE = "browser_tasks:execute"
 
+SUPPORT_CATEGORIES_READ = "support_categories:read"
+SUPPORT_CATEGORIES_WRITE = "support_categories:write"
+SUPPORT_CATEGORIES_DELETE = "support_categories:delete"
+
+SUPPORT_TICKETS_READ = "support_tickets:read"
+SUPPORT_TICKETS_WRITE = "support_tickets:write"
+SUPPORT_TICKETS_DELETE = "support_tickets:delete"
+SUPPORT_TICKETS_EXECUTE = "support_tickets:execute"
+
+VOICE_AGENTS_READ = "voice_agents:read"
+VOICE_AGENTS_WRITE = "voice_agents:write"
+VOICE_AGENTS_DELETE = "voice_agents:delete"
+
+VOICE_SESSIONS_READ = "voice_sessions:read"
+VOICE_SESSIONS_WRITE = "voice_sessions:write"
+VOICE_SESSIONS_DELETE = "voice_sessions:delete"
+VOICE_SESSIONS_EXECUTE = "voice_sessions:execute"
+
+OMNICHANNEL_CHANNELS_READ = "omnichannel_channels:read"
+OMNICHANNEL_CHANNELS_WRITE = "omnichannel_channels:write"
+OMNICHANNEL_CHANNELS_DELETE = "omnichannel_channels:delete"
+
+OMNICHANNEL_CONVERSATIONS_READ = "omnichannel_conversations:read"
+OMNICHANNEL_CONVERSATIONS_WRITE = "omnichannel_conversations:write"
+OMNICHANNEL_CONVERSATIONS_DELETE = "omnichannel_conversations:delete"
+OMNICHANNEL_CONVERSATIONS_EXECUTE = "omnichannel_conversations:execute"
+
 # Built-in roles created for every organization; their slugs cannot be deleted.
 SYSTEM_ROLE_SLUGS: frozenset[str] = frozenset({"admin", "manager", "member"})
 
@@ -113,6 +140,27 @@ ALL_PERMISSION_SLUGS: tuple[str, ...] = (
     BROWSER_TASKS_WRITE,
     BROWSER_TASKS_DELETE,
     BROWSER_TASKS_EXECUTE,
+    SUPPORT_CATEGORIES_READ,
+    SUPPORT_CATEGORIES_WRITE,
+    SUPPORT_CATEGORIES_DELETE,
+    SUPPORT_TICKETS_READ,
+    SUPPORT_TICKETS_WRITE,
+    SUPPORT_TICKETS_DELETE,
+    SUPPORT_TICKETS_EXECUTE,
+    VOICE_AGENTS_READ,
+    VOICE_AGENTS_WRITE,
+    VOICE_AGENTS_DELETE,
+    VOICE_SESSIONS_READ,
+    VOICE_SESSIONS_WRITE,
+    VOICE_SESSIONS_DELETE,
+    VOICE_SESSIONS_EXECUTE,
+    OMNICHANNEL_CHANNELS_READ,
+    OMNICHANNEL_CHANNELS_WRITE,
+    OMNICHANNEL_CHANNELS_DELETE,
+    OMNICHANNEL_CONVERSATIONS_READ,
+    OMNICHANNEL_CONVERSATIONS_WRITE,
+    OMNICHANNEL_CONVERSATIONS_DELETE,
+    OMNICHANNEL_CONVERSATIONS_EXECUTE,
 )
 
 
@@ -246,6 +294,111 @@ DEFAULT_PERMISSIONS: tuple[PermissionDefinition, ...] = (
         BROWSER_TASKS_EXECUTE,
         "Run browser automation tasks",
     ),
+    PermissionDefinition(
+        "Read Support Categories",
+        SUPPORT_CATEGORIES_READ,
+        "View customer support ticket categories",
+    ),
+    PermissionDefinition(
+        "Write Support Categories",
+        SUPPORT_CATEGORIES_WRITE,
+        "Create and update customer support ticket categories",
+    ),
+    PermissionDefinition(
+        "Delete Support Categories",
+        SUPPORT_CATEGORIES_DELETE,
+        "Delete customer support ticket categories",
+    ),
+    PermissionDefinition(
+        "Read Support Tickets",
+        SUPPORT_TICKETS_READ,
+        "View customer support tickets and conversation threads",
+    ),
+    PermissionDefinition(
+        "Write Support Tickets",
+        SUPPORT_TICKETS_WRITE,
+        "Create and update customer support tickets",
+    ),
+    PermissionDefinition(
+        "Delete Support Tickets",
+        SUPPORT_TICKETS_DELETE,
+        "Delete customer support tickets",
+    ),
+    PermissionDefinition(
+        "Execute Support Tickets",
+        SUPPORT_TICKETS_EXECUTE,
+        "Respond to support tickets and manage ticket workflow actions",
+    ),
+    PermissionDefinition(
+        "Read Voice Agents",
+        VOICE_AGENTS_READ,
+        "View voice AI agents and their configuration",
+    ),
+    PermissionDefinition(
+        "Write Voice Agents",
+        VOICE_AGENTS_WRITE,
+        "Create and update voice AI agents",
+    ),
+    PermissionDefinition(
+        "Delete Voice Agents",
+        VOICE_AGENTS_DELETE,
+        "Delete voice AI agents",
+    ),
+    PermissionDefinition(
+        "Read Voice Sessions",
+        VOICE_SESSIONS_READ,
+        "View voice session history and transcripts",
+    ),
+    PermissionDefinition(
+        "Write Voice Sessions",
+        VOICE_SESSIONS_WRITE,
+        "Create voice sessions",
+    ),
+    PermissionDefinition(
+        "Delete Voice Sessions",
+        VOICE_SESSIONS_DELETE,
+        "Delete voice sessions",
+    ),
+    PermissionDefinition(
+        "Execute Voice Sessions",
+        VOICE_SESSIONS_EXECUTE,
+        "Upload audio and run voice transcription with AI responses",
+    ),
+    PermissionDefinition(
+        "Read Omnichannel Channels",
+        OMNICHANNEL_CHANNELS_READ,
+        "View omnichannel communication channels",
+    ),
+    PermissionDefinition(
+        "Write Omnichannel Channels",
+        OMNICHANNEL_CHANNELS_WRITE,
+        "Create and update omnichannel communication channels",
+    ),
+    PermissionDefinition(
+        "Delete Omnichannel Channels",
+        OMNICHANNEL_CHANNELS_DELETE,
+        "Delete omnichannel communication channels",
+    ),
+    PermissionDefinition(
+        "Read Omnichannel Conversations",
+        OMNICHANNEL_CONVERSATIONS_READ,
+        "View unified inbox and conversation history",
+    ),
+    PermissionDefinition(
+        "Write Omnichannel Conversations",
+        OMNICHANNEL_CONVERSATIONS_WRITE,
+        "Create and update omnichannel conversations",
+    ),
+    PermissionDefinition(
+        "Delete Omnichannel Conversations",
+        OMNICHANNEL_CONVERSATIONS_DELETE,
+        "Delete omnichannel conversations",
+    ),
+    PermissionDefinition(
+        "Execute Omnichannel Conversations",
+        OMNICHANNEL_CONVERSATIONS_EXECUTE,
+        "Send messages, request handoff, and use AI-assisted responses",
+    ),
 )
 
 # Which permission slugs each default role receives on organization creation.
@@ -280,6 +433,21 @@ ROLE_PERMISSION_SLUGS: dict[str, tuple[str, ...]] = {
         BROWSER_TASKS_READ,
         BROWSER_TASKS_WRITE,
         BROWSER_TASKS_EXECUTE,
+        SUPPORT_CATEGORIES_READ,
+        SUPPORT_CATEGORIES_WRITE,
+        SUPPORT_TICKETS_READ,
+        SUPPORT_TICKETS_WRITE,
+        SUPPORT_TICKETS_EXECUTE,
+        VOICE_AGENTS_READ,
+        VOICE_AGENTS_WRITE,
+        VOICE_SESSIONS_READ,
+        VOICE_SESSIONS_WRITE,
+        VOICE_SESSIONS_EXECUTE,
+        OMNICHANNEL_CHANNELS_READ,
+        OMNICHANNEL_CHANNELS_WRITE,
+        OMNICHANNEL_CONVERSATIONS_READ,
+        OMNICHANNEL_CONVERSATIONS_WRITE,
+        OMNICHANNEL_CONVERSATIONS_EXECUTE,
     ),
     "member": (
         DEPARTMENTS_READ,
@@ -296,6 +464,15 @@ ROLE_PERMISSION_SLUGS: dict[str, tuple[str, ...]] = {
         BROWSER_PROFILES_READ,
         BROWSER_TASKS_READ,
         BROWSER_TASKS_EXECUTE,
+        SUPPORT_CATEGORIES_READ,
+        SUPPORT_TICKETS_READ,
+        SUPPORT_TICKETS_EXECUTE,
+        VOICE_AGENTS_READ,
+        VOICE_SESSIONS_READ,
+        VOICE_SESSIONS_EXECUTE,
+        OMNICHANNEL_CHANNELS_READ,
+        OMNICHANNEL_CONVERSATIONS_READ,
+        OMNICHANNEL_CONVERSATIONS_EXECUTE,
     ),
 }
 

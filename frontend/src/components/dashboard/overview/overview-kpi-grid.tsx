@@ -13,7 +13,20 @@ interface OverviewKpiGridProps {
   isLoading?: boolean;
 }
 
+const loadingKpiPlaceholders: OverviewKpiItem[] = [
+  { label: "Users", value: "—", change: "Loading…", trend: "neutral", accent: "blue" },
+  { label: "Documents", value: "—", change: "Loading…", trend: "neutral", accent: "purple" },
+  { label: "AI Employees", value: "—", change: "Loading…", trend: "neutral", accent: "emerald" },
+  { label: "Agent Tasks", value: "—", change: "Loading…", trend: "neutral", accent: "blue" },
+  { label: "Workflows", value: "—", change: "Loading…", trend: "neutral", accent: "purple" },
+  { label: "Research Projects", value: "—", change: "Loading…", trend: "neutral", accent: "gold" },
+  { label: "Browser Tasks", value: "—", change: "Loading…", trend: "neutral", accent: "gold" },
+];
+
 export function OverviewKpiGrid({ kpis, isLoading }: OverviewKpiGridProps) {
+  const displayKpis =
+    kpis.length > 0 ? kpis : isLoading ? loadingKpiPlaceholders : [];
+
   return (
     <section className="px-6 md:px-8">
       <DashboardSectionHeader
@@ -22,7 +35,7 @@ export function OverviewKpiGrid({ kpis, isLoading }: OverviewKpiGridProps) {
         description="Platform-wide activity and efficiency at a glance."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((kpi) => {
+        {displayKpis.map((kpi) => {
           const accent = dashboardAccents[kpi.accent];
           return (
             <DashboardCard

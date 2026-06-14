@@ -22,6 +22,13 @@ if TYPE_CHECKING:
     from app.models.browser_task_execution import BrowserTaskExecution
     from app.models.research_project import ResearchProject
     from app.models.research_report import ResearchReport
+    from app.models.support_ticket import SupportTicket
+    from app.models.support_ticket_message import SupportTicketMessage
+    from app.models.voice_agent import VoiceAgent
+    from app.models.voice_session import VoiceSession
+    from app.models.omnichannel_channel import OmnichannelChannel
+    from app.models.omnichannel_conversation import OmnichannelConversation
+    from app.models.omnichannel_message import OmnichannelMessage
     from app.models.workflow import Workflow
     from app.models.workflow_execution import WorkflowExecution
 
@@ -87,4 +94,35 @@ class User(Base, TimestampMixin):
     )
     created_browser_task_executions: Mapped[list["BrowserTaskExecution"]] = relationship(
         back_populates="created_by",
+    )
+    created_support_tickets: Mapped[list["SupportTicket"]] = relationship(
+        back_populates="created_by",
+        foreign_keys="SupportTicket.created_by_id",
+    )
+    assigned_support_tickets: Mapped[list["SupportTicket"]] = relationship(
+        back_populates="assigned_user",
+        foreign_keys="SupportTicket.assigned_user_id",
+    )
+    support_ticket_messages: Mapped[list["SupportTicketMessage"]] = relationship(
+        back_populates="author_user",
+    )
+    created_voice_agents: Mapped[list["VoiceAgent"]] = relationship(
+        back_populates="created_by",
+    )
+    created_voice_sessions: Mapped[list["VoiceSession"]] = relationship(
+        back_populates="created_by",
+    )
+    created_omnichannel_channels: Mapped[list["OmnichannelChannel"]] = relationship(
+        back_populates="created_by",
+    )
+    created_omnichannel_conversations: Mapped[list["OmnichannelConversation"]] = relationship(
+        back_populates="created_by",
+        foreign_keys="OmnichannelConversation.created_by_id",
+    )
+    assigned_omnichannel_conversations: Mapped[list["OmnichannelConversation"]] = relationship(
+        back_populates="assigned_user",
+        foreign_keys="OmnichannelConversation.assigned_user_id",
+    )
+    omnichannel_messages: Mapped[list["OmnichannelMessage"]] = relationship(
+        back_populates="author_user",
     )

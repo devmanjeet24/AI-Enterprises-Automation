@@ -37,6 +37,12 @@ export const PERMISSION_RESOURCE_GROUPS: { resource: string; label: string }[] =
   { resource: "research_projects", label: "Research Hub" },
   { resource: "browser_profiles", label: "Browser Profiles" },
   { resource: "browser_tasks", label: "Browser Tasks" },
+  { resource: "support_categories", label: "Support Categories" },
+  { resource: "support_tickets", label: "Customer Support" },
+  { resource: "voice_agents", label: "Voice Agents" },
+  { resource: "voice_sessions", label: "Voice Sessions" },
+  { resource: "omnichannel_channels", label: "Omnichannel Channels" },
+  { resource: "omnichannel_conversations", label: "Omnichannel Conversations" },
 ];
 
 const RESOURCE_LABELS = Object.fromEntries(

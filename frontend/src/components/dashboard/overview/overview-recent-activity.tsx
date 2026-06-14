@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   BookOpen,
   Bot,
@@ -54,7 +55,7 @@ export function OverviewRecentActivity({
             ? "Loading activity…"
             : `${activityTodayCount} event${activityTodayCount === 1 ? "" : "s"} today`
         }
-        action={{ label: "View all" }}
+        action={{ label: "View all", href: "/analytics" }}
         accent="blue"
       />
       <ul className="flex-1 divide-y divide-white/[0.05]">
@@ -66,11 +67,11 @@ export function OverviewRecentActivity({
           items.map((item) => {
             const Icon = activityIcons[item.type];
             const accent = dashboardAccents[activityAccents[item.type]];
-            return (
-              <li
-                key={item.id}
-                className="group flex items-start gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.025]"
-              >
+            const rowClassName =
+              "flex items-start gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.025]";
+
+            const inner = (
+              <>
                 <div
                   className={cn(
                     "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border",
@@ -82,7 +83,12 @@ export function OverviewRecentActivity({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className="truncate text-[13px] font-medium text-foreground">
+                    <p
+                      className={cn(
+                        "truncate text-[13px] font-medium text-foreground",
+                        item.href && "group-hover:text-brand",
+                      )}
+                    >
                       {item.title}
                     </p>
                     <time className="shrink-0 text-[11px] text-tertiary">{item.time}</time>
@@ -91,6 +97,18 @@ export function OverviewRecentActivity({
                     {item.description}
                   </p>
                 </div>
+              </>
+            );
+
+            return (
+              <li key={item.id}>
+                {item.href ? (
+                  <Link href={item.href} className={cn("group", rowClassName)}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div className={rowClassName}>{inner}</div>
+                )}
               </li>
             );
           })

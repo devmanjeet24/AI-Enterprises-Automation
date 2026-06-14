@@ -119,6 +119,8 @@ export function useResearchReports(params?: ListResearchReportsParams) {
     queryKey: researchProjectKeys.reportList(params),
     queryFn: () => listResearchReports(token!, params),
     enabled: Boolean(token),
+    refetchInterval: (query) =>
+      hasInProgressReport(query.state.data) ? REPORT_POLL_MS : false,
   });
 }
 

@@ -14,10 +14,12 @@ import {
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/api/client";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/agent-teams/access";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
+import { AgentTeamsAccessDenied } from "./agent-teams-access-denied";
 import { AgentTeamsError } from "./agent-teams-error";
 import { AgentTeamsStats } from "./agent-teams-stats";
 import { TeamConfigPanel } from "./team-config-panel";
@@ -70,6 +72,13 @@ export function AgentTeamDetailPage({ teamId }: AgentTeamDetailPageProps) {
   if (isTeamError) {
     if (teamError instanceof ApiError && teamError.status === 404) {
       notFound();
+    }
+    if (isAccessDeniedError(teamError)) {
+      return (
+        <div className="px-6 py-8 md:px-8">
+          <AgentTeamsAccessDenied message="You do not have permission to view this agent team." />
+        </div>
+      );
     }
     return (
       <div className="px-6 py-8 md:px-8">

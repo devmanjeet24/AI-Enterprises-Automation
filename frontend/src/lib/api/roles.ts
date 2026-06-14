@@ -20,7 +20,7 @@ export function createRole(token: string, input: CreateRoleInput): Promise<Role>
   return apiClient<Role>(ROLES_BASE, {
     method: "POST",
     token,
-    body: JSON.stringify(input),
+    body: input,
   });
 }
 
@@ -32,7 +32,7 @@ export function updateRole(
   return apiClient<Role>(`${ROLES_BASE}/${roleId}`, {
     method: "PATCH",
     token,
-    body: JSON.stringify(input),
+    body: input,
   });
 }
 

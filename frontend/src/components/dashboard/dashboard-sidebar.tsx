@@ -29,6 +29,9 @@ const navAccents: Record<string, string> = {
   "/workflows": "text-[#f5c518]",
   "/research-hub": "text-[#A78BFA]",
   "/browser-automation": "text-[#6B9BF8]",
+  "/customer-support": "text-[#6B9BF8]",
+  "/voice-ai": "text-[#4ADE80]",
+  "/omnichannel": "text-[#A78BFA]",
   "/analytics": "text-[#4ADE80]",
   "/settings": "text-muted-foreground",
 };

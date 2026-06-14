@@ -13,12 +13,20 @@ from app.api.v1.endpoints import (
     employees,
     health,
     knowledge,
+    omnichannel_channels,
+    omnichannel_conversations,
     organizations,
     permissions,
     research_projects,
     roles,
+    support_categories,
+    support_tickets,
     teams,
     users,
+    voice_agents,
+    voice_sessions,
+    omnichannel_channels,
+    omnichannel_conversations,
     workflows,
 )
 
@@ -36,6 +44,12 @@ api_router.include_router(workflows.router)
 api_router.include_router(research_projects.router)
 api_router.include_router(browser_profiles.router)
 api_router.include_router(browser_tasks.router)
+api_router.include_router(support_categories.router)
+api_router.include_router(support_tickets.router)
+api_router.include_router(voice_agents.router)
+api_router.include_router(voice_sessions.router)
+api_router.include_router(omnichannel_channels.router)
+api_router.include_router(omnichannel_conversations.router)
 api_router.include_router(conversations.router)
 api_router.include_router(departments.router)
 api_router.include_router(teams.router)

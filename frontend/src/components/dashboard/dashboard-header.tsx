@@ -1,11 +1,10 @@
 "use client";
 
-import { Bell, Building2, ChevronDown, LogOut, Search, Settings, User } from "lucide-react";
+import { Building2, ChevronDown, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import { logout } from "@/lib/auth/session";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -69,25 +68,6 @@ export function DashboardHeader({ onMenuToggle }: DashboardHeaderProps) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <div className="relative hidden md:block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-tertiary" />
-          <input
-            type="search"
-            placeholder="Search…"
-            className="h-8 w-52 rounded-lg border border-white/[0.07] bg-white/[0.03] pl-9 pr-3 text-[12px] text-foreground placeholder:text-tertiary transition-colors hover:border-white/[0.1] focus:border-white/[0.14] focus:bg-white/[0.04] focus:outline-none focus:ring-1 focus:ring-ring/25 lg:w-60"
-          />
-        </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative size-8 shrink-0 rounded-lg border border-white/[0.07]"
-          aria-label="Notifications"
-        >
-          <Bell className="size-3.5" />
-          <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-brand" />
-        </Button>
-
         <div className="relative" ref={menuRef}>
           <button
             type="button"
@@ -119,22 +99,24 @@ export function DashboardHeader({ onMenuToggle }: DashboardHeaderProps) {
                 </p>
               </div>
               <div className="py-1">
-                <button
-                  type="button"
+                <Link
+                  href={user?.id ? `/settings/users/${user.id}` : "/settings/users"}
                   role="menuitem"
                   className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                  onClick={() => setProfileOpen(false)}
                 >
                   <User className="size-3.5" />
                   Profile
-                </button>
-                <button
-                  type="button"
+                </Link>
+                <Link
+                  href="/settings"
                   role="menuitem"
                   className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                  onClick={() => setProfileOpen(false)}
                 >
                   <Settings className="size-3.5" />
                   Settings
-                </button>
+                </Link>
               </div>
               <div className="border-t border-white/[0.06] pt-1">
                 <button

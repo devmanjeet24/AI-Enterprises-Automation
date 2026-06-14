@@ -4,7 +4,10 @@ import {
   BookOpen,
   GitBranch,
   Globe,
+  Headphones,
+  Inbox,
   LayoutDashboard,
+  Mic,
   Network,
   Search,
   Settings,
@@ -26,7 +29,10 @@ export const dashboardNavItems: DashboardNavItem[] = [
   { label: "Workflows", href: "/workflows", icon: GitBranch, enabled: true },
   { label: "Research Hub", href: "/research-hub", icon: Search, enabled: true },
   { label: "Browser Automation", href: "/browser-automation", icon: Globe, enabled: true },
-  { label: "Analytics", href: "/analytics", icon: BarChart3, enabled: false },
+  { label: "Customer Support", href: "/customer-support", icon: Headphones, enabled: true },
+  { label: "Voice AI", href: "/voice-ai", icon: Mic, enabled: true },
+  { label: "Omnichannel", href: "/omnichannel", icon: Inbox, enabled: true },
+  { label: "Analytics", href: "/analytics", icon: BarChart3, enabled: true },
 ];
 
 export const dashboardSettingsItem: DashboardNavItem = {

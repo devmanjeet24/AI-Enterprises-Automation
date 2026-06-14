@@ -10,11 +10,11 @@ import { cn } from "@/lib/utils";
 
 const heroStatAccents = ["emerald", "blue", "purple", "gold"] as const;
 
-const quickStatPlaceholders = [
-  { label: "Active agents", value: 0, accent: "emerald" as const },
-  { label: "Tasks completed", value: 0, accent: "blue" as const },
-  { label: "Knowledge coverage", value: 0, accent: "purple" as const },
-  { label: "Workflow success", value: 0, accent: "gold" as const },
+const quickStatLabels = [
+  { label: "Active agents", accent: "emerald" as const },
+  { label: "Tasks completed", accent: "blue" as const },
+  { label: "Knowledge coverage", accent: "purple" as const },
+  { label: "Workflow success", accent: "gold" as const },
 ];
 
 interface OverviewHeroProps {
@@ -28,8 +28,7 @@ function displayCount(value: number | undefined, isLoading?: boolean) {
 
 export function OverviewHero({ data }: OverviewHeroProps) {
   const user = useAppSelector((state) => state.auth.user);
-  const { overview, isLoading } = data;
-  const quickStats = data.quickStats.length > 0 ? data.quickStats : quickStatPlaceholders;
+  const { overview, isLoading, quickStats } = data;
 
   const firstName = user?.first_name ?? "there";
   const orgName = user?.organization_name ?? "Your organization";
@@ -60,6 +59,11 @@ export function OverviewHero({ data }: OverviewHeroProps) {
   const activeAgents = data.activeEmployeeCount;
   const totalTasks = overview?.total_agent_tasks ?? 0;
   const workflowSuccess = quickStats[3]?.value ?? 0;
+
+  const displayedQuickStats =
+    quickStats.length > 0
+      ? quickStats
+      : quickStatLabels.map((item) => ({ ...item, value: 0 }));
 
   return (
     <section className="border-b border-white/[0.05] px-6 pb-8 pt-7 md:px-8">
@@ -105,7 +109,7 @@ export function OverviewHero({ data }: OverviewHeroProps) {
       </div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {quickStats.map((stat) => {
+        {displayedQuickStats.map((stat) => {
           const accent = dashboardAccents[stat.accent];
           return (
             <div

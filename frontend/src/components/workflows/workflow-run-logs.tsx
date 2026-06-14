@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type { AgentTaskExecution } from "@/lib/workflows/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
@@ -41,7 +43,16 @@ export function WorkflowRunLogs({ executions }: WorkflowRunLogsProps) {
                 </span>
                 <div>
                   <p className="text-[13px] font-medium text-foreground">
-                    {execution.employee_name ?? "Team member"}
+                    {execution.ai_employee_id ? (
+                      <Link
+                        href={`/ai-employees/${execution.ai_employee_id}`}
+                        className="transition-colors hover:text-brand"
+                      >
+                        {execution.employee_name ?? "Team member"}
+                      </Link>
+                    ) : (
+                      (execution.employee_name ?? "Team member")
+                    )}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {execution.collaboration_role}

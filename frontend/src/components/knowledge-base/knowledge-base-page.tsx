@@ -5,6 +5,7 @@ import { useState } from "react";
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-card";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/knowledge-base/access";
 import type { DocumentStatus } from "@/lib/knowledge-base/types";
 import { useDocuments } from "@/hooks/use-knowledge-base";
 import { useUserPermissions } from "@/hooks/use-auth-token";
@@ -13,6 +14,7 @@ import { DocumentEmptyState } from "./document-empty-state";
 import { DocumentList } from "./document-list";
 import { DocumentListSkeleton } from "./document-list-skeleton";
 import { DocumentUploadModal } from "./document-upload-modal";
+import { KnowledgeBaseAccessDenied } from "./knowledge-base-access-denied";
 import { KnowledgeBaseError } from "./knowledge-base-error";
 import { KnowledgeBaseHero } from "./knowledge-base-hero";
 import { KnowledgeBaseStats } from "./knowledge-base-stats";
@@ -31,9 +33,18 @@ export function KnowledgeBasePage() {
   const { data: documents = [], isLoading, isError, error, refetch } =
     useDocuments("all");
 
+  const accessDenied = isError && isAccessDeniedError(error);
   const errorMessage = isError
     ? getApiErrorMessage(error, "Failed to load documents.")
     : null;
+
+  if (accessDenied) {
+    return (
+      <div className="px-6 py-16 md:px-8">
+        <KnowledgeBaseAccessDenied />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-10 md:pb-12">

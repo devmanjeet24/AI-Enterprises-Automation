@@ -7,15 +7,14 @@ import { getDashboardOverview } from "@/lib/api/dashboard";
 import { listDocuments } from "@/lib/api/documents";
 import { listEmployees } from "@/lib/api/employees";
 import { listWorkflowExecutions, listWorkflows } from "@/lib/api/workflows";
+import { fetchOptional } from "@/lib/analytics/fetch-optional";
 import {
   buildOverviewActivity,
   buildOverviewEmployees,
   buildOverviewKpis,
-  overviewKpiPlaceholders,
   buildOverviewQuickStats,
   buildOverviewWorkflows,
   buildPlatformPulse,
-  platformPulsePlaceholders,
   countActivityToday,
 } from "@/lib/dashboard/overview";
 import { dashboardKeys } from "@/lib/dashboard/query-keys";
@@ -43,8 +42,8 @@ export interface OverviewPageData {
   activeEmployeeCount: number;
   runningWorkflowCount: number;
   isLoading: boolean;
-  isError: boolean;
-  error: unknown;
+  isOverviewError: boolean;
+  overviewError: unknown;
   refetch: () => Promise<void>;
 }
 
@@ -66,23 +65,28 @@ export function useOverviewPage(): OverviewPageData {
   const detailQuery = useQuery({
     queryKey: [...dashboardKeys.all, "details"],
     queryFn: async () => {
-      const [employees, workflows, documents, tasks] = await Promise.all([
-        listEmployees(token!),
-        listWorkflows(token!),
-        listDocuments(token!),
-        listAgentTasks(token!),
-      ]);
+      const [employeesResult, workflowsResult, documentsResult, tasksResult] =
+        await Promise.all([
+          fetchOptional(() => listEmployees(token!)),
+          fetchOptional(() => listWorkflows(token!)),
+          fetchOptional(() => listDocuments(token!)),
+          fetchOptional(() => listAgentTasks(token!)),
+        ]);
 
-      const executionGroups = await Promise.all(
-        workflows.map((workflow) => listWorkflowExecutions(token!, workflow.id)),
+      const workflows = workflowsResult.data ?? [];
+
+      const executionResults = await Promise.all(
+        workflows.map((workflow) =>
+          fetchOptional(() => listWorkflowExecutions(token!, workflow.id)),
+        ),
       );
-      const executions = executionGroups.flat();
+      const executions = executionResults.flatMap((result) => result.data ?? []);
 
       return {
-        employees,
+        employees: employeesResult.data ?? [],
         workflows,
-        documents,
-        tasks,
+        documents: documentsResult.data ?? [],
+        tasks: tasksResult.data ?? [],
         executions,
       };
     },
@@ -92,7 +96,7 @@ export function useOverviewPage(): OverviewPageData {
   const overview = overviewQuery.data;
   const details = detailQuery.data;
 
-  const kpis = overview ? buildOverviewKpis(overview) : overviewKpiPlaceholders;
+  const kpis = overview ? buildOverviewKpis(overview) : [];
   const quickStats =
     overview && details
       ? buildOverviewQuickStats(
@@ -104,21 +108,19 @@ export function useOverviewPage(): OverviewPageData {
         )
       : [];
   const employees = details ? buildOverviewEmployees(details.employees) : [];
-  const workflows =
-    details ? buildOverviewWorkflows(details.workflows, details.executions) : [];
-  const activity =
-    details
-      ? buildOverviewActivity(
-          details.tasks,
-          details.executions,
-          details.documents,
-          details.workflows,
-        )
-      : [];
+  const workflows = details
+    ? buildOverviewWorkflows(details.workflows, details.executions)
+    : [];
+  const activity = details
+    ? buildOverviewActivity(
+        details.tasks,
+        details.executions,
+        details.documents,
+        details.workflows,
+      )
+    : [];
   const platformPulse =
-    overview && details
-      ? buildPlatformPulse(overview, details.documents)
-      : platformPulsePlaceholders;
+    overview && details ? buildPlatformPulse(overview, details.documents) : [];
 
   const refetch = async () => {
     await Promise.all([overviewQuery.refetch(), detailQuery.refetch()]);
@@ -136,12 +138,10 @@ export function useOverviewPage(): OverviewPageData {
     activeEmployeeCount: details
       ? details.employees.filter((employee) => employee.status === "active").length
       : 0,
-    runningWorkflowCount: workflows.filter(
-      (workflow) => workflow.status === "running",
-    ).length,
+    runningWorkflowCount: workflows.filter((workflow) => workflow.status === "running").length,
     isLoading: overviewQuery.isLoading || detailQuery.isLoading,
-    isError: overviewQuery.isError || detailQuery.isError,
-    error: overviewQuery.error ?? detailQuery.error,
+    isOverviewError: overviewQuery.isError,
+    overviewError: overviewQuery.error,
     refetch,
   };
 }
