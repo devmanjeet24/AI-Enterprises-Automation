@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { OverviewEmployeeItem } from "@/lib/dashboard/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
@@ -51,10 +52,11 @@ export function OverviewAiEmployees({
             const statusAccent = dashboardAccents[status.accent];
 
             return (
-              <li
-                key={employee.id}
-                className="group flex items-center gap-3.5 px-5 py-3.5 transition-colors hover:bg-white/[0.025]"
-              >
+              <li key={employee.id}>
+                <Link
+                  href={`/ai-employees/${employee.id}`}
+                  className="group flex items-center gap-3.5 px-5 py-3.5 transition-colors hover:bg-white/[0.025]"
+                >
                 <div className="relative">
                   <div
                     className={cn(
@@ -79,7 +81,7 @@ export function OverviewAiEmployees({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-[13px] font-medium text-foreground">
+                    <p className="truncate text-[13px] font-medium text-foreground transition-colors group-hover:text-brand">
                       {employee.name}
                     </p>
                     <Badge variant={status.variant} className="h-[18px] px-1.5 text-[10px]">
@@ -96,6 +98,7 @@ export function OverviewAiEmployees({
                   </p>
                   <p className="text-[11px] text-tertiary">tasks</p>
                 </div>
+                </Link>
               </li>
             );
           })

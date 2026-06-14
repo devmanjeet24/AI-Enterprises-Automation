@@ -433,6 +433,39 @@ StrippedOptionalTargetUrl = Annotated[
     BeforeValidator(make_optional_strip_validator("Target URL", max_length=2048)),
 ]
 
+# --- Support ticket fields ---
+
+StrippedSupportTicketSubject = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Ticket subject")),
+    Field(max_length=255),
+]
+StrippedOptionalSupportTicketSubject = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Ticket subject", max_length=255)),
+]
+StrippedOptionalSupportTicketSlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Ticket slug", max_length=50)),
+]
+StrippedSupportCategoryName = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Category name")),
+    Field(max_length=100),
+]
+StrippedOptionalSupportCategoryName = Annotated[
+    str | None,
+    BeforeValidator(make_optional_strip_validator("Category name", max_length=100)),
+]
+StrippedOptionalSupportCategorySlug = Annotated[
+    str | None,
+    BeforeValidator(make_optional_slug_validator("Category slug", max_length=50)),
+]
+StrippedSupportMessageContent = Annotated[
+    str,
+    BeforeValidator(make_required_strip_validator("Message content")),
+]
+
 # --- Shared aliases for future modules (Organizations API) ---
 
 StrippedName = Annotated[

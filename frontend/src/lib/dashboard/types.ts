@@ -24,6 +24,7 @@ export interface OverviewActivityItem {
   time: string;
   timestamp: string;
   type: OverviewActivityType;
+  href?: string;
 }
 
 export interface OverviewKpiItem {
@@ -42,9 +43,14 @@ export interface OverviewQuickStat {
 
 export type OverviewWorkflowDisplayStatus =
   | "running"
-  | "scheduled"
+  | "pending"
   | "completed"
-  | "failed";
+  | "failed"
+  | "cancelled"
+  | "ready"
+  | "draft"
+  | "archived"
+  | "inactive";
 
 export interface OverviewWorkflowItem {
   id: string;

@@ -12,6 +12,15 @@ from app.models.document_chunk import DocumentChunk
 from app.models.browser_profile import BrowserProfile
 from app.models.browser_task import BrowserTask
 from app.models.browser_task_execution import BrowserTaskExecution
+from app.models.support_ticket import SupportTicket
+from app.models.support_ticket_category import SupportTicketCategory
+from app.models.support_ticket_message import SupportTicketMessage
+from app.models.voice_agent import VoiceAgent
+from app.models.voice_session import VoiceSession
+from app.models.voice_transcript import VoiceTranscript
+from app.models.omnichannel_channel import OmnichannelChannel
+from app.models.omnichannel_conversation import OmnichannelConversation
+from app.models.omnichannel_message import OmnichannelMessage
 from app.models.enums import (
     AgentTaskExecutionStatus,
     AgentTaskStatus,
@@ -20,8 +29,17 @@ from app.models.enums import (
     BrowserTaskStatus,
     DocumentStatus,
     MessageRole,
+    OmnichannelChannelType,
+    OmnichannelConversationStatus,
+    OmnichannelHandoffStatus,
+    OmnichannelMessageRole,
     ResearchProjectStatus,
     ResearchTemplateType,
+    SupportMessageRole,
+    SupportTicketPriority,
+    SupportTicketStatus,
+    VoiceSessionStatus,
+    VoiceTranscriptRole,
     WorkflowStatus,
 )
 from app.models.research_project import ResearchProject
@@ -61,6 +79,13 @@ __all__ = [
     "DocumentChunk",
     "DocumentStatus",
     "KnowledgeDocument",
+    "OmnichannelChannel",
+    "OmnichannelChannelType",
+    "OmnichannelConversation",
+    "OmnichannelConversationStatus",
+    "OmnichannelHandoffStatus",
+    "OmnichannelMessage",
+    "OmnichannelMessageRole",
     "Organization",
     "Permission",
     "Role",
@@ -69,9 +94,20 @@ __all__ = [
     "ResearchReport",
     "ResearchTemplateType",
     "RolePermission",
+    "SupportMessageRole",
+    "SupportTicket",
+    "SupportTicketCategory",
+    "SupportTicketMessage",
+    "SupportTicketPriority",
+    "SupportTicketStatus",
     "Team",
     "User",
     "UserRole",
+    "VoiceAgent",
+    "VoiceSession",
+    "VoiceSessionStatus",
+    "VoiceTranscript",
+    "VoiceTranscriptRole",
     "Workflow",
     "WorkflowExecution",
     "WorkflowStatus",

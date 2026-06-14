@@ -25,6 +25,12 @@ if TYPE_CHECKING:
     from app.models.browser_task_execution import BrowserTaskExecution
     from app.models.research_project import ResearchProject
     from app.models.research_report import ResearchReport
+    from app.models.support_ticket import SupportTicket
+    from app.models.support_ticket_category import SupportTicketCategory
+    from app.models.voice_agent import VoiceAgent
+    from app.models.voice_session import VoiceSession
+    from app.models.omnichannel_channel import OmnichannelChannel
+    from app.models.omnichannel_conversation import OmnichannelConversation
     from app.models.workflow import Workflow
     from app.models.workflow_execution import WorkflowExecution
 
@@ -76,5 +82,23 @@ class Organization(Base, TimestampMixin):
         back_populates="organization",
     )
     browser_task_executions: Mapped[list["BrowserTaskExecution"]] = relationship(
+        back_populates="organization",
+    )
+    support_ticket_categories: Mapped[list["SupportTicketCategory"]] = relationship(
+        back_populates="organization",
+    )
+    support_tickets: Mapped[list["SupportTicket"]] = relationship(
+        back_populates="organization",
+    )
+    voice_agents: Mapped[list["VoiceAgent"]] = relationship(
+        back_populates="organization",
+    )
+    voice_sessions: Mapped[list["VoiceSession"]] = relationship(
+        back_populates="organization",
+    )
+    omnichannel_channels: Mapped[list["OmnichannelChannel"]] = relationship(
+        back_populates="organization",
+    )
+    omnichannel_conversations: Mapped[list["OmnichannelConversation"]] = relationship(
         back_populates="organization",
     )

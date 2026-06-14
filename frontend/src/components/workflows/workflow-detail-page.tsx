@@ -14,6 +14,7 @@ import {
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/api/client";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/workflows/access";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ import { WorkflowDetailSkeleton } from "./workflow-list-skeleton";
 import { WorkflowSchedulePanel } from "./workflow-schedule-panel";
 import { WorkflowSetupChecklist } from "./workflow-setup-checklist";
 import { WorkflowStatusBadge } from "./workflow-status-badge";
+import { WorkflowsAccessDenied } from "./workflows-access-denied";
 import { WorkflowsError } from "./workflows-error";
 import { WorkflowsStats } from "./workflows-stats";
 
@@ -70,6 +72,13 @@ export function WorkflowDetailPage({ workflowId }: WorkflowDetailPageProps) {
   if (isWorkflowError) {
     if (workflowError instanceof ApiError && workflowError.status === 404) {
       notFound();
+    }
+    if (isAccessDeniedError(workflowError)) {
+      return (
+        <div className="px-6 py-8 md:px-8">
+          <WorkflowsAccessDenied message="You do not have permission to view this workflow." />
+        </div>
+      );
     }
     return (
       <div className="px-6 py-8 md:px-8">
@@ -119,7 +128,13 @@ export function WorkflowDetailPage({ workflowId }: WorkflowDetailPageProps) {
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <WorkflowStatusBadge status={workflow.status} />
                 <span className="text-[12px] text-muted-foreground">
-                  Team: {workflow.agent_team_name}
+                  Team:{" "}
+                  <Link
+                    href={`/agent-teams/${workflow.agent_team_id}`}
+                    className="font-medium text-foreground transition-colors hover:text-brand"
+                  >
+                    {workflow.agent_team_name}
+                  </Link>
                 </span>
               </div>
             </div>
@@ -165,7 +180,12 @@ export function WorkflowDetailPage({ workflowId }: WorkflowDetailPageProps) {
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Agent team</dt>
                   <dd className="font-medium text-foreground">
-                    {workflow.agent_team_name}
+                    <Link
+                      href={`/agent-teams/${workflow.agent_team_id}`}
+                      className="transition-colors hover:text-brand"
+                    >
+                      {workflow.agent_team_name}
+                    </Link>
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -227,7 +247,7 @@ export function WorkflowDetailPage({ workflowId }: WorkflowDetailPageProps) {
           </>
         )}
         {activeTab === "schedule" && (
-          <WorkflowSchedulePanel workflow={workflow} canWrite={canWrite} />
+          <WorkflowSchedulePanel workflow={workflow} />
         )}
       </div>
     </div>

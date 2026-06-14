@@ -2,8 +2,12 @@
 
 import { DashboardSectionHeader } from "../dashboard-card";
 import { useOverviewPage } from "@/hooks/use-dashboard-overview";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/dashboard/access";
 
+import { OverviewAccessDenied } from "./overview-access-denied";
 import { OverviewAiEmployees } from "./overview-ai-employees";
+import { OverviewError } from "./overview-error";
 import { OverviewHero } from "./overview-hero";
 import { OverviewKpiGrid } from "./overview-kpi-grid";
 import { OverviewPlatformPulse } from "./overview-platform-pulse";
@@ -13,6 +17,22 @@ import { FeaturedVideoCard } from "./featured-video-card";
 
 export function OverviewPage() {
   const data = useOverviewPage();
+
+  if (data.isOverviewError && isAccessDeniedError(data.overviewError)) {
+    return <OverviewAccessDenied />;
+  }
+
+  if (data.isOverviewError) {
+    return (
+      <OverviewError
+        message={getApiErrorMessage(
+          data.overviewError,
+          "Failed to load workspace overview. Check your connection and try again.",
+        )}
+        onRetry={() => void data.refetch()}
+      />
+    );
+  }
 
   return (
     <div className="pb-10 md:pb-12">
@@ -59,7 +79,7 @@ export function OverviewPage() {
           <DashboardSectionHeader
             eyebrow="Automation"
             title="Workflow summary"
-            description="Active pipelines and scheduled jobs across your organization."
+            description="Active pipelines and recent manual runs across your organization."
           />
           <OverviewWorkflowSummary
             workflows={data.workflows}

@@ -196,9 +196,10 @@ function mapExecutionToWorkflowStatus(
   workflow: Workflow,
 ): OverviewWorkflowDisplayStatus {
   if (!execution) {
-    return workflow.status === "active" && workflow.is_active
-      ? "scheduled"
-      : "scheduled";
+    if (workflow.status === "draft") return "draft";
+    if (workflow.status === "archived") return "archived";
+    if (!workflow.is_active) return "inactive";
+    return "ready";
   }
 
   switch (execution.status) {
@@ -208,8 +209,12 @@ function mapExecutionToWorkflowStatus(
       return "completed";
     case "failed":
       return "failed";
+    case "pending":
+      return "pending";
+    case "cancelled":
+      return "cancelled";
     default:
-      return "scheduled";
+      return "ready";
   }
 }
 
@@ -220,6 +225,8 @@ function executionProgress(status: OverviewWorkflowDisplayStatus): number {
       return 100;
     case "running":
       return 50;
+    case "pending":
+      return 25;
     default:
       return 0;
   }
@@ -283,6 +290,7 @@ export function buildOverviewActivity(
     time: formatRelativeTime(task.updated_at),
     timestamp: task.updated_at,
     type: "agent",
+    href: `/agent-teams/${task.agent_team_id}`,
   }));
 
   const executionItems: OverviewActivityItem[] = executions.map((execution) => ({
@@ -296,6 +304,7 @@ export function buildOverviewActivity(
     time: formatRelativeTime(execution.updated_at),
     timestamp: execution.updated_at,
     type: "workflow",
+    href: `/workflows/${execution.workflow_id}`,
   }));
 
   const documentItems: OverviewActivityItem[] = documents.map((document) => ({
@@ -308,6 +317,7 @@ export function buildOverviewActivity(
     time: formatRelativeTime(document.updated_at),
     timestamp: document.updated_at,
     type: "knowledge",
+    href: `/knowledge-base/${document.id}`,
   }));
 
   return [...taskItems, ...executionItems, ...documentItems]

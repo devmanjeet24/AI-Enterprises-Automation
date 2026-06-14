@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useDocument } from "@/hooks/use-knowledge-base";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/knowledge-base/access";
 import { ApiError } from "@/lib/api/client";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ import { DocumentDetailMetadata } from "./document-detail-metadata";
 import { DocumentDetailSkeleton } from "./document-list-skeleton";
 import { DocumentPipelineSteps } from "./document-pipeline-steps";
 import { DocumentStatusBadge } from "./document-status-badge";
+import { KnowledgeBaseAccessDenied } from "./knowledge-base-access-denied";
 import { KnowledgeBaseError } from "./knowledge-base-error";
 
 interface KnowledgeBaseDetailPageProps {
@@ -39,6 +41,14 @@ export function KnowledgeBaseDetailPage({
   if (isError) {
     if (error instanceof ApiError && error.status === 404) {
       notFound();
+    }
+
+    if (isAccessDeniedError(error)) {
+      return (
+        <div className="px-6 py-8 md:px-8">
+          <KnowledgeBaseAccessDenied message="You do not have permission to view this document." />
+        </div>
+      );
     }
 
     return (

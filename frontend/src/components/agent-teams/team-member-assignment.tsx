@@ -1,6 +1,7 @@
 "use client";
 
 import { Bot, GripVertical, Loader2, Plus, Trash2, UserPlus } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -226,7 +227,12 @@ export function TeamMemberAssignment({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-medium text-foreground">
-                    {member.employee_name}
+                    <Link
+                      href={`/ai-employees/${member.ai_employee_id}`}
+                      className="transition-colors hover:text-brand"
+                    >
+                      {member.employee_name}
+                    </Link>
                   </p>
                   <p className="mt-0.5 text-[12px] text-muted-foreground">
                     {member.collaboration_role} · {member.employee_role}

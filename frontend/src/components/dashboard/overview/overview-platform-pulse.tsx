@@ -15,15 +15,25 @@ interface OverviewPlatformPulseProps {
   isLoading?: boolean;
 }
 
+const loadingPulsePlaceholders: OverviewPlatformMetric[] = [
+  { label: "Uptime", value: "—", detail: "Loading…", accent: "emerald" },
+  { label: "Latency", value: "—", detail: "Loading…", accent: "blue" },
+  { label: "Security", value: "—", detail: "Loading…", accent: "purple" },
+  { label: "AI coverage", value: "—", detail: "Loading…", accent: "gold" },
+];
+
 export function OverviewPlatformPulse({
   metrics,
   isLoading,
 }: OverviewPlatformPulseProps) {
+  const displayMetrics =
+    metrics.length > 0 ? metrics : isLoading ? loadingPulsePlaceholders : [];
+
   return (
     <DashboardCard variant="panel" accent="neutral" className="h-full" interactive={false}>
       <DashboardCardHeader title="Platform pulse" subtitle="Real-time health" />
       <div className="grid grid-cols-2 gap-3 p-4">
-        {metrics.map((metric, index) => {
+        {displayMetrics.map((metric, index) => {
           const Icon = metricIcons[index % metricIcons.length];
           const accent = dashboardAccents[metric.accent];
           return (

@@ -6,6 +6,7 @@ import { DashboardSectionHeader } from "@/components/dashboard/dashboard-card";
 import { useEmployees } from "@/hooks/use-ai-employees";
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/ai-employees/access";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import type { AIEmployeeStatus } from "@/lib/ai-employees/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { AiEmployeesHero } from "./ai-employees-hero";
 import { AiEmployeesStats } from "./ai-employees-stats";
+import { AiEmployeesAccessDenied } from "./ai-employees-access-denied";
 import { AiEmployeesError } from "./ai-employees-error";
 import { CreateEmployeeModal } from "./create-employee-modal";
 import { EmployeeCardGrid } from "./employee-card-grid";
@@ -36,9 +38,18 @@ export function AiEmployeesPage() {
   const { data: employees = [], isLoading, isError, error, refetch } =
     useEmployees("all");
 
+  const accessDenied = isError && isAccessDeniedError(error);
   const errorMessage = isError
     ? getApiErrorMessage(error, "Failed to load AI employees.")
     : null;
+
+  if (accessDenied) {
+    return (
+      <div className="px-6 py-16 md:px-8">
+        <AiEmployeesAccessDenied />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-10 md:pb-12">

@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Play, Zap } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -94,8 +95,13 @@ export function WorkflowExecutionPanel({
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
               Triggers execution through{" "}
-              <span className="text-foreground">{workflow.agent_team_name}</span>. Creates
-              an agent task and runs all steps sequentially.
+              <Link
+                href={`/agent-teams/${workflow.agent_team_id}`}
+                className="font-medium text-foreground transition-colors hover:text-brand"
+              >
+                {workflow.agent_team_name}
+              </Link>
+              . Creates an agent task and runs all steps sequentially.
             </p>
           </div>
         </div>

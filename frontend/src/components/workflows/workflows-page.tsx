@@ -6,6 +6,7 @@ import { DashboardSectionHeader } from "@/components/dashboard/dashboard-card";
 import { useWorkflowsOverview } from "@/hooks/use-workflows";
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { isAccessDeniedError } from "@/lib/workflows/access";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import type { WorkflowStatus } from "@/lib/workflows/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
@@ -15,6 +16,7 @@ import { CreateWorkflowModal } from "./create-workflow-modal";
 import { WorkflowCardGrid } from "./workflow-card-grid";
 import { WorkflowCardGridSkeleton } from "./workflow-list-skeleton";
 import { WorkflowEmptyState } from "./workflow-empty-state";
+import { WorkflowsAccessDenied } from "./workflows-access-denied";
 import { WorkflowsError } from "./workflows-error";
 import { WorkflowsHero } from "./workflows-hero";
 import { WorkflowsStats } from "./workflows-stats";
@@ -44,9 +46,18 @@ export function WorkflowsPage() {
     return workflows.filter((workflow) => workflow.status === statusFilter);
   }, [workflows, statusFilter]);
 
+  const accessDenied = isError && isAccessDeniedError(error);
   const errorMessage = isError
     ? getApiErrorMessage(error, "Failed to load workflows.")
     : null;
+
+  if (accessDenied) {
+    return (
+      <div className="px-6 py-16 md:px-8">
+        <WorkflowsAccessDenied />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-10 md:pb-12">

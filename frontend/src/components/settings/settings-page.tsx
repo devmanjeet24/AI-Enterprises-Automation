@@ -9,6 +9,8 @@ import { SettingsHero } from "./settings-hero";
 import { SettingsNavGrid } from "./settings-nav-grid";
 import { SettingsPageSkeleton } from "./settings-skeleton";
 import { SettingsStats } from "./settings-stats";
+import { SettingsAccessDenied } from "./settings-access-denied";
+import { isAccessDeniedError } from "@/lib/settings/access";
 
 export function SettingsPage() {
   const user = useAuthUser();
@@ -23,6 +25,15 @@ export function SettingsPage() {
 
   const organizationName = user?.organization_name ?? "your organization";
   const isInitialLoading = isOverviewLoading && !overview;
+  const accessDenied = isOverviewError && isAccessDeniedError(overviewError);
+
+  if (accessDenied) {
+    return (
+      <div className="px-6 py-16 md:px-8">
+        <SettingsAccessDenied message="You do not have permission to view workspace settings." />
+      </div>
+    );
+  }
 
   if (isInitialLoading) {
     return <SettingsPageSkeleton />;

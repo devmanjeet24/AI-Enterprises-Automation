@@ -27,7 +27,7 @@ export function createPermission(
   return apiClient<Permission>(PERMISSIONS_BASE, {
     method: "POST",
     token,
-    body: JSON.stringify(input),
+    body: input,
   });
 }
 
@@ -39,7 +39,7 @@ export function updatePermission(
   return apiClient<Permission>(`${PERMISSIONS_BASE}/${permissionId}`, {
     method: "PATCH",
     token,
-    body: JSON.stringify(input),
+    body: input,
   });
 }
 
@@ -68,7 +68,7 @@ export function assignPermissionToRole(
   return apiClient<RolePermissionGrant>(`${PERMISSIONS_BASE}/roles/${roleId}/assign`, {
     method: "POST",
     token,
-    body: JSON.stringify(input),
+    body: input,
   });
 }
 
