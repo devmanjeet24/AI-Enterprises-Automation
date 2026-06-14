@@ -59,7 +59,7 @@ export function ManageCategoriesPanel({ open, onClose }: ManageCategoriesPanelPr
         description: description.trim() || undefined,
         color,
       });
-      toast.success("Category created");
+      toast.success("Category created.");
       resetForm();
       onClose();
     } catch (error) {

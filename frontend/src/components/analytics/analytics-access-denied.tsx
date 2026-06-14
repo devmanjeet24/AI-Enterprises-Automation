@@ -31,9 +31,14 @@ export function AnalyticsAccessDenied({
       </div>
       <h3 className="mt-4 text-[15px] font-medium text-foreground">{title}</h3>
       <p className="mt-2 max-w-md text-[13px] text-muted-foreground">{message}</p>
-      <Button variant="secondary" size="sm" className="mt-5" asChild>
-        <Link href={backHref}>{backLabel}</Link>
-      </Button>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <Button variant="secondary" size="sm" asChild>
+          <Link href={backHref}>{backLabel}</Link>
+        </Button>
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/overview">Back to overview</Link>
+        </Button>
+      </div>
     </DashboardCard>
   );
 }

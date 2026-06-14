@@ -90,7 +90,7 @@ export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPage
 
     try {
       await uploadMutation.mutateAsync(file);
-      toast.success("Audio processed successfully");
+      toast.success("Audio processed successfully.");
     } catch (uploadError) {
       toast.error(getApiErrorMessage(uploadError, "Failed to process audio."));
     } finally {

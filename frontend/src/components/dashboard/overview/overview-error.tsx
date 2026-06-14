@@ -27,7 +27,7 @@ export function OverviewError({
         <div className="flex size-12 items-center justify-center rounded-xl border border-destructive/20 bg-destructive/10">
           <AlertCircle className="size-5 text-destructive" />
         </div>
-        <h3 className="mt-4 text-[16px] font-medium text-foreground">{title}</h3>
+        <h3 className="mt-4 text-[15px] font-medium text-foreground">{title}</h3>
         <p className="mt-2 max-w-md text-[13px] leading-relaxed text-muted-foreground">
           {message}
         </p>

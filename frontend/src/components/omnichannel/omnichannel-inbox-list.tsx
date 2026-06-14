@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { Inbox } from "lucide-react";
 
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { formatRelativeDate } from "@/config/omnichannel";
 import type { OmnichannelInboxItem } from "@/lib/omnichannel/types";
+import { dashboardAccents } from "@/lib/dashboard-accents";
+import { cn } from "@/lib/utils";
 
 import {
   OmnichannelChannelTypeBadge,
@@ -20,9 +23,30 @@ export function OmnichannelInboxList({
   emptyMessage?: string;
 }) {
   if (items.length === 0) {
+    const accent = dashboardAccents.purple;
+
     return (
-      <DashboardCard variant="panel" accent="purple" className="flex flex-col items-center px-6 py-16 text-center">
-        <p className="text-[14px] text-muted-foreground">{emptyMessage}</p>
+      <DashboardCard
+        variant="panel"
+        accent="purple"
+        interactive={false}
+        className="flex flex-col items-center px-6 py-16 text-center"
+      >
+        <div
+          className={cn(
+            "flex size-14 items-center justify-center rounded-2xl border",
+            accent.bgSubtle,
+            accent.border,
+          )}
+        >
+          <Inbox className={cn("size-6", accent.text)} />
+        </div>
+        <h3 className="mt-5 text-[16px] font-medium tracking-[-0.01em] text-foreground">
+          Inbox is empty
+        </h3>
+        <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-muted-foreground">
+          {emptyMessage}
+        </p>
       </DashboardCard>
     );
   }

@@ -67,7 +67,7 @@ export function SupportTicketSidebar({
         assigned_user_id: assignedUserId || null,
         assigned_ai_employee_id: assignedEmployeeId || null,
       });
-      toast.success("Ticket updated");
+      toast.success("Ticket updated.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to update ticket."));
     }
@@ -78,7 +78,7 @@ export function SupportTicketSidebar({
 
     try {
       await deleteMutation.mutateAsync(ticket.id);
-      toast.success("Ticket deleted");
+      toast.success("Ticket deleted.");
       router.push("/customer-support");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to delete ticket."));

@@ -67,7 +67,7 @@ export function OmnichannelConversationDetailPage({
   const handleHandoff = async () => {
     try {
       await handoffMutation.mutateAsync();
-      toast.success("Human handoff requested");
+      toast.success("Human handoff requested.");
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to request handoff."));
     }

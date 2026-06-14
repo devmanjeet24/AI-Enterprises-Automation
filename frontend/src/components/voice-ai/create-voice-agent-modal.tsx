@@ -65,7 +65,7 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
         description: description.trim() || undefined,
         ai_employee_id: aiEmployeeId,
       });
-      toast.success("Voice agent created");
+      toast.success("Voice agent created.");
       resetForm();
       onClose();
       router.push(`/voice-ai/${agent.id}`);

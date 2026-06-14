@@ -68,7 +68,7 @@ export function CreateOmnichannelChannelModal({
         channel_type: channelType,
         ai_employee_id: aiEmployeeId || undefined,
       });
-      toast.success("Channel created");
+      toast.success("Channel created.");
       resetForm();
       onClose();
     } catch (error) {

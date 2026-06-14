@@ -90,7 +90,7 @@ export function CreateTicketModal({ open, onClose }: CreateTicketModalProps) {
         assigned_ai_employee_id: assignedEmployeeId || undefined,
         initial_message: initialMessage.trim() || undefined,
       });
-      toast.success("Ticket created");
+      toast.success("Ticket created.");
       resetForm();
       onClose();
       router.push(`/customer-support/${ticket.id}`);

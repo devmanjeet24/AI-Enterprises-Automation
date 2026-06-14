@@ -84,7 +84,7 @@ export function SupportTicketConversation({
         is_internal: isInternal,
       });
       setContent("");
-      toast.success(isInternal ? "Internal note added" : "Reply sent");
+      toast.success(isInternal ? "Internal note added." : "Reply sent.");
     } catch (sendError) {
       toast.error(getApiErrorMessage(sendError, "Failed to send message."));
     }

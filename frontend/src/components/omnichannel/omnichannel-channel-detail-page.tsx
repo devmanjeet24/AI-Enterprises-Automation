@@ -76,7 +76,7 @@ export function OmnichannelChannelDetailPage({ channelId }: { channelId: string 
         external_contact_name: "Demo Customer",
         initial_message: "Hello, I need help with my account.",
       });
-      toast.success("Conversation created");
+      toast.success("Conversation created.");
       router.push(`/omnichannel/conversations/${conversation.id}`);
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to create conversation."));

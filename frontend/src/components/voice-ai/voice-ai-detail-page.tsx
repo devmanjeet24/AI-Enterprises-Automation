@@ -94,7 +94,7 @@ export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
         voice_agent_id: agent.id,
         title: `Session ${new Date().toLocaleString()}`,
       });
-      toast.success("Session created");
+      toast.success("Session created.");
       router.push(`/voice-ai/sessions/${session.id}`);
     } catch (createError) {
       toast.error(getApiErrorMessage(createError, "Failed to create session."));
