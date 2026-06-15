@@ -10,9 +10,12 @@ from app.models.ai_employee import AIEmployee
 from app.models.browser_task import BrowserTask
 from app.models.department import Department
 from app.models.knowledge_document import KnowledgeDocument
+from app.models.omnichannel_conversation import OmnichannelConversation
 from app.models.research_project import ResearchProject
+from app.models.support_ticket import SupportTicket
 from app.models.team import Team
 from app.models.user import User
+from app.models.voice_session import VoiceSession
 from app.models.workflow import Workflow
 
 
@@ -69,6 +72,21 @@ def get_dashboard_overview(
             .where(BrowserTask.organization_id == organization_id)
             .scalar_subquery()
             .label("total_browser_tasks"),
+            select(func.count())
+            .select_from(SupportTicket)
+            .where(SupportTicket.organization_id == organization_id)
+            .scalar_subquery()
+            .label("total_support_tickets"),
+            select(func.count())
+            .select_from(VoiceSession)
+            .where(VoiceSession.organization_id == organization_id)
+            .scalar_subquery()
+            .label("total_voice_sessions"),
+            select(func.count())
+            .select_from(OmnichannelConversation)
+            .where(OmnichannelConversation.organization_id == organization_id)
+            .scalar_subquery()
+            .label("total_omnichannel_conversations"),
         )
     ).one()
 
@@ -82,4 +100,7 @@ def get_dashboard_overview(
         "total_workflows": counts.total_workflows or 0,
         "total_research_projects": counts.total_research_projects or 0,
         "total_browser_tasks": counts.total_browser_tasks or 0,
+        "total_support_tickets": counts.total_support_tickets or 0,
+        "total_voice_sessions": counts.total_voice_sessions or 0,
+        "total_omnichannel_conversations": counts.total_omnichannel_conversations or 0,
     }

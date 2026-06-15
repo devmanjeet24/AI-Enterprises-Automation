@@ -229,6 +229,24 @@ export function buildExecutivePlatformMetrics(
       value: overview.total_browser_tasks,
       accent: "blue",
     },
+    {
+      key: "support",
+      label: "Support Tickets",
+      value: overview.total_support_tickets,
+      accent: "emerald",
+    },
+    {
+      key: "voice",
+      label: "Voice Sessions",
+      value: overview.total_voice_sessions,
+      accent: "blue",
+    },
+    {
+      key: "omnichannel",
+      label: "Omnichannel",
+      value: overview.total_omnichannel_conversations,
+      accent: "purple",
+    },
   ];
 }
 

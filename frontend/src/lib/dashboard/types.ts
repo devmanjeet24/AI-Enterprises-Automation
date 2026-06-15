@@ -8,6 +8,9 @@ export interface DashboardOverview {
   total_workflows: number;
   total_research_projects: number;
   total_browser_tasks: number;
+  total_support_tickets: number;
+  total_voice_sessions: number;
+  total_omnichannel_conversations: number;
 }
 
 export type OverviewActivityType =

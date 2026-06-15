@@ -149,3 +149,6 @@ def test_dashboard_overview_returns_counts(client: TestClient) -> None:
     assert body["total_workflows"] == 0
     assert body["total_research_projects"] == 0
     assert body["total_browser_tasks"] == 0
+    assert body["total_support_tickets"] == 0
+    assert body["total_voice_sessions"] == 0
+    assert body["total_omnichannel_conversations"] == 0
