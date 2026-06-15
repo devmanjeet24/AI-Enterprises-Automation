@@ -1,9 +1,9 @@
 import { SectionHeading } from "@/components/ui/section-heading";
 import { analyticsStats } from "@/config/landing";
 
+import { AnalyticsSectionVisual } from "./analytics-section-visual";
 import { LandingCard } from "./landing-card";
 import { LandingSection } from "./landing-section";
-import { MockUiPanel } from "./mock-ui-panel";
 import { ScrollReveal } from "./scroll-reveal";
 import { StaggerGrid, StaggerItem } from "./stagger-grid";
 
@@ -34,7 +34,7 @@ export function AnalyticsSection() {
         </StaggerGrid>
 
         <ScrollReveal delay={0.12}>
-          <MockUiPanel variant="analytics" />
+          <AnalyticsSectionVisual />
         </ScrollReveal>
       </div>
     </LandingSection>

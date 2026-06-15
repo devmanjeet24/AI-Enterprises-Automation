@@ -8,9 +8,7 @@ export type MockVariant =
   | "knowledge"
   | "agents"
   | "workflow"
-  | "research"
-  | "browser"
-  | "analytics";
+  | "browser";
 
 interface MockUiPanelProps {
   variant: MockVariant;
@@ -66,12 +64,8 @@ function renderVariant(variant: MockVariant) {
       return <AgentsMock />;
     case "workflow":
       return <WorkflowMock />;
-    case "research":
-      return <ResearchMock />;
     case "browser":
       return <BrowserMock />;
-    case "analytics":
-      return <AnalyticsMock />;
   }
 }
 
@@ -146,28 +140,6 @@ function WorkflowMock() {
   );
 }
 
-function ResearchMock() {
-  return (
-    <div className="space-y-2">
-      <div className="rounded-lg border border-border bg-surface/40 p-3 transition-colors duration-300 group-hover:bg-surface/60">
-        <p className="text-[10px] font-medium text-foreground">
-          Competitive landscape — Q2
-        </p>
-        <p className="mt-1 text-[10px] text-tertiary">Phase: Synthesizing report</p>
-      </div>
-      {["Market sizing", "Feature comparison", "Pricing analysis"].map((item) => (
-        <div
-          key={item}
-          className="flex items-center gap-2 text-[10px] text-muted-foreground"
-        >
-          <span className="size-1.5 rounded-full bg-brand" />
-          {item}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function BrowserMock() {
   return (
     <div className="space-y-2">
@@ -184,34 +156,3 @@ function BrowserMock() {
   );
 }
 
-function AnalyticsMock() {
-  const bars = [40, 65, 45, 80, 55, 90, 70];
-  return (
-    <div className="flex h-full flex-col justify-end">
-      <div className="flex items-end justify-between gap-1.5">
-        {bars.map((h, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-t bg-brand/60 transition-all duration-300 group-hover:bg-brand/85"
-            style={{ height: `${h}%` }}
-          />
-        ))}
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {[
-          { l: "Tasks", v: "12.4k" },
-          { l: "Success", v: "98.2%" },
-          { l: "Avg time", v: "1.2s" },
-        ].map((s) => (
-          <div
-            key={s.l}
-            className="rounded border border-border p-1.5 text-center transition-colors duration-300 group-hover:border-border-default"
-          >
-            <p className="text-[10px] font-medium text-brand">{s.v}</p>
-            <p className="text-[8px] text-tertiary">{s.l}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}

@@ -1,3 +1,4 @@
+import { BusinessResearchHubVisual } from "./business-research-hub-visual";
 import { FeatureSection } from "./feature-section";
 
 export function BusinessResearchHubSection() {
@@ -13,7 +14,7 @@ export function BusinessResearchHubSection() {
         "Sourced findings with export to PDF and Markdown",
         "Analytics on research project performance",
       ]}
-      mockVariant="research"
+      visual={<BusinessResearchHubVisual />}
     />
   );
 }
