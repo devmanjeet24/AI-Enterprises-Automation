@@ -73,11 +73,11 @@ export function LoginForm() {
 
   return (
     <div className="w-full">
-      <div className="mb-8">
-        <h1 className="font-display text-[1.75rem] leading-[1.2] tracking-[-0.03em] text-foreground lg:text-[2rem]">
+      <div className="mb-9">
+        <h1 className="font-display text-[1.875rem] leading-[1.18] tracking-[-0.03em] text-foreground lg:text-[2.125rem]">
           Welcome back
         </h1>
-        <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           Sign in to your enterprise AI workspace
         </p>
       </div>
