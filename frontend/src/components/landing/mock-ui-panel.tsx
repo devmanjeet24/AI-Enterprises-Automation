@@ -5,7 +5,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export type MockVariant =
-  | "chat"
   | "knowledge"
   | "agents"
   | "workflow"
@@ -61,8 +60,6 @@ function MockChrome() {
 
 function renderVariant(variant: MockVariant) {
   switch (variant) {
-    case "chat":
-      return <ChatMock />;
     case "knowledge":
       return <KnowledgeMock />;
     case "agents":
@@ -76,28 +73,6 @@ function renderVariant(variant: MockVariant) {
     case "analytics":
       return <AnalyticsMock />;
   }
-}
-
-function ChatMock() {
-  return (
-    <div className="space-y-3">
-      <div className="ml-auto max-w-[75%] rounded-xl rounded-tr-sm border border-brand/15 bg-brand-muted px-3 py-2 text-xs text-foreground transition-colors duration-300 group-hover:border-brand/25">
-        Summarize this support ticket and draft a reply.
-      </div>
-      <div className="max-w-[80%] rounded-xl rounded-tl-sm border border-border bg-surface/60 px-3 py-2 text-xs text-muted-foreground transition-colors duration-300 group-hover:bg-surface/80">
-        Customer reports billing discrepancy on invoice #4821. Policy: verify
-        account tier before refund.
-      </div>
-      <div className="flex gap-2">
-        <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-tertiary transition-colors duration-300 group-hover:border-border-default">
-          Source: KB-104
-        </span>
-        <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-tertiary transition-colors duration-300 group-hover:border-border-default">
-          Confidence: 94%
-        </span>
-      </div>
-    </div>
-  );
 }
 
 function KnowledgeMock() {

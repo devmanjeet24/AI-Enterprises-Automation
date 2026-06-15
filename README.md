@@ -120,10 +120,10 @@ cd backend
 uv sync && uv run alembic upgrade head
 pm2 start "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4" --name ai-backend
 
-# Frontend (build first)
+# Frontend (build first; standalone output requires asset copy — handled by npm run build)
 cd frontend
 npm install && npm run build
-pm2 start npm --name ai-frontend -- start
+PORT=20380 pm2 start npm --name ai-frontend -- start
 ```
 
 Set `CORS_ORIGINS`, `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_APP_URL` to your production domain before building and starting. See [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md) for the full variable reference.

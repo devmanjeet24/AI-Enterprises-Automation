@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "next build && npm run copy-standalone-assets",
+    "copy-standalone-assets": "cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint"
   },
   "dependencies": {

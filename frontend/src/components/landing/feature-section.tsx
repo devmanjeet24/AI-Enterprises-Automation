@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { SectionHeading } from "@/components/ui/section-heading";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +15,8 @@ type FeatureSectionProps = {
   accent?: string;
   description: string;
   bullets: string[];
-  mockVariant: MockVariant;
+  mockVariant?: MockVariant;
+  visual?: ReactNode;
   reversed?: boolean;
   className?: string;
 };
@@ -26,6 +29,7 @@ export function FeatureSection({
   description,
   bullets,
   mockVariant,
+  visual,
   reversed = false,
   className,
 }: FeatureSectionProps) {
@@ -54,7 +58,7 @@ export function FeatureSection({
         </ScrollReveal>
 
         <ScrollReveal delay={0.12}>
-          <MockUiPanel variant={mockVariant} />
+          {visual ?? <MockUiPanel variant={mockVariant!} />}
         </ScrollReveal>
       </div>
     </LandingSection>
