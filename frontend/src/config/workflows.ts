@@ -9,7 +9,6 @@ export type {
   WorkflowDetail,
   WorkflowExecution,
   WorkflowExecutionStatus,
-  WorkflowScheduleDraft,
   WorkflowStatus,
   WorkflowStep,
   WorkflowStepDraft,

@@ -6,15 +6,13 @@ export type WorkflowDetailTab =
   | "configure"
   | "builder"
   | "execute"
-  | "history"
-  | "schedule";
+  | "history";
 
 const tabs: { id: WorkflowDetailTab; label: string }[] = [
   { id: "configure", label: "Configure" },
   { id: "builder", label: "Builder" },
   { id: "execute", label: "Execute" },
   { id: "history", label: "History" },
-  { id: "schedule", label: "Schedule" },
 ];
 
 interface WorkflowDetailTabsProps {
