@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from app.models.organization import Organization
     from app.models.role import Role
     from app.models.user_role import UserRole
+    from app.models.user_invitation import UserInvitation
     from app.models.browser_profile import BrowserProfile
     from app.models.browser_task import BrowserTask
     from app.models.browser_task_execution import BrowserTaskExecution
@@ -64,6 +65,14 @@ class User(Base, TimestampMixin):
         secondary="user_roles",
         back_populates="users",
         viewonly=True,
+    )
+    sent_user_invitations: Mapped[list["UserInvitation"]] = relationship(
+        back_populates="invited_by",
+        foreign_keys="UserInvitation.invited_by_id",
+    )
+    accepted_user_invitations: Mapped[list["UserInvitation"]] = relationship(
+        back_populates="accepted_by",
+        foreign_keys="UserInvitation.accepted_by_id",
     )
     uploaded_documents: Mapped[list["KnowledgeDocument"]] = relationship(
         back_populates="uploaded_by",

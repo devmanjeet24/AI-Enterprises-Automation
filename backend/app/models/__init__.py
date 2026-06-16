@@ -54,6 +54,7 @@ from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.team import Team
 from app.models.user import User
+from app.models.user_invitation import UserInvitation
 from app.models.user_role import UserRole
 
 __all__ = [
@@ -102,6 +103,7 @@ __all__ = [
     "SupportTicketStatus",
     "Team",
     "User",
+    "UserInvitation",
     "UserRole",
     "VoiceAgent",
     "VoiceSession",

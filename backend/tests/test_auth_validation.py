@@ -136,6 +136,90 @@ def test_register_rejects_original_whitespace_only_payload(client: TestClient) -
     assert "cannot be empty or contain only whitespace" in response.text
 
 
+def test_register_allows_multiple_users_in_same_organization(client: TestClient) -> None:
+    """Additional teammates join via organization_slug instead of creating a new org."""
+    import uuid
+
+    unique = uuid.uuid4().hex[:8]
+    org_name = f"Shared Org {unique}"
+    admin_email = f"admin.{unique}@example.com"
+    member_email = f"member.{unique}@example.com"
+
+    admin_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": admin_email,
+            "password": "securepass123",
+            "first_name": "Admin",
+            "last_name": "User",
+            "organization_name": org_name,
+        },
+    )
+    assert admin_response.status_code == 201, admin_response.text
+    admin_headers = {"Authorization": f"Bearer {admin_response.json()['access_token']}"}
+
+    org_slug = client.get("/api/v1/auth/me", headers=admin_headers).json()["organization_slug"]
+
+    member_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": member_email,
+            "password": "securepass123",
+            "first_name": "Member",
+            "last_name": "User",
+            "organization_slug": org_slug,
+        },
+    )
+    assert member_response.status_code == 201, member_response.text
+
+    member_headers = {"Authorization": f"Bearer {member_response.json()['access_token']}"}
+    member_me = client.get("/api/v1/auth/me", headers=member_headers).json()
+    admin_me = client.get("/api/v1/auth/me", headers=admin_headers).json()
+
+    assert member_me["organization_id"] == admin_me["organization_id"]
+    assert member_me["organization_slug"] == org_slug
+    assert member_me["roles"][0]["slug"] == "member"
+
+    member_login = client.post(
+        "/api/v1/auth/login/json",
+        json={"email": member_email, "password": "securepass123"},
+    )
+    assert member_login.status_code == 200
+    assert member_login.json()["access_token"]
+
+
+def test_register_rejects_duplicate_organization_slug_on_create(client: TestClient) -> None:
+    import uuid
+
+    unique = uuid.uuid4().hex[:8]
+    org_name = f"Duplicate Org {unique}"
+
+    first = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": f"first.{unique}@example.com",
+            "password": "securepass123",
+            "first_name": "First",
+            "last_name": "User",
+            "organization_name": org_name,
+        },
+    )
+    assert first.status_code == 201, first.text
+
+    second = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": f"second.{unique}@example.com",
+            "password": "securepass123",
+            "first_name": "Second",
+            "last_name": "User",
+            "organization_name": org_name,
+        },
+    )
+    assert second.status_code == 409
+    assert "already taken" in second.json()["detail"]
+
+
 def test_login_rejects_whitespace_only_credentials(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/login",

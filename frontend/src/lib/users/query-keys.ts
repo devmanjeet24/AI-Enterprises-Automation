@@ -5,6 +5,7 @@ export const userKeys = {
   lists: () => [...userKeys.all, "list"] as const,
   list: (filter?: UserStatusFilter) =>
     [...userKeys.lists(), { filter: filter ?? "all" }] as const,
+  invitations: () => [...userKeys.all, "invitations"] as const,
   details: () => [...userKeys.all, "detail"] as const,
   detail: (id: string) => [...userKeys.details(), id] as const,
 };

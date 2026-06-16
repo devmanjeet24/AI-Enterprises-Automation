@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { AcceptInvitationForm } from "@/components/auth/accept-invitation-form";
 import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
-import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = {
-  title: "Create account",
-  description: "Create your Lumen account and start building AI employees.",
+  title: "Accept invitation",
+  description: "Accept your organization invitation and create your Lumen account.",
 };
 
-export default function RegisterPage() {
+export default function AcceptInvitationPage() {
   return (
     <AuthSplitLayout>
       <Suspense fallback={null}>
-        <RegisterForm />
+        <AcceptInvitationForm />
       </Suspense>
     </AuthSplitLayout>
   );

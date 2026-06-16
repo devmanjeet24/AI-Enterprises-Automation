@@ -1,6 +1,7 @@
 "use client";
 
 import { Shield, UserCheck, Users, UserX } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { computeUsersStats } from "@/config/users";
 import type { User } from "@/lib/users/types";
@@ -9,9 +10,10 @@ import { cn } from "@/lib/utils";
 
 interface UsersHeroProps {
   users: User[];
+  actions?: ReactNode;
 }
 
-export function UsersHero({ users }: UsersHeroProps) {
+export function UsersHero({ users, actions }: UsersHeroProps) {
   const accent = dashboardAccents.emerald;
   const stats = computeUsersStats(users);
 
@@ -37,6 +39,7 @@ export function UsersHero({ users }: UsersHeroProps) {
             View human accounts, edit profiles, assign roles, and control account
             activation across your workspace.
           </p>
+          {actions && <div className="mt-5">{actions}</div>}
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-6 lg:gap-8">
