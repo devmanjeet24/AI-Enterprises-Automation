@@ -1,4 +1,4 @@
-"""Simulated browser task execution (Playwright integration deferred)."""
+"""Browser task execution via Playwright."""
 
 import uuid
 from datetime import UTC, datetime
@@ -10,8 +10,12 @@ from sqlalchemy.orm import Session
 
 from app.models.browser_task_execution import BrowserTaskExecution
 from app.models.enums import BrowserTaskExecutionStatus, BrowserTaskStatus
+from app.schemas.browser_step import parse_browser_task_config, resolve_execution_steps
 from app.services.browser_profile_service import get_browser_profile_or_404
+from app.services.browser_profile_session_service import mark_profile_session_saved
+from app.services.browser_step_executor import StepExecutionError
 from app.services.browser_task_service import get_browser_task_or_404
+from app.services.playwright_engine import format_playwright_error, run_playwright_task
 
 
 def get_browser_task_execution_or_404(
@@ -88,6 +92,15 @@ def _validate_task_runnable(db: Session, *, task) -> None:
         )
 
 
+def _failed_step_metadata(exc: StepExecutionError) -> dict[str, Any]:
+    return {
+        "index": exc.step_index,
+        "action": exc.step_action,
+        "selector": exc.selector,
+        "message": exc.message,
+    }
+
+
 def run_browser_task(
     db: Session,
     *,
@@ -95,7 +108,7 @@ def run_browser_task(
     task_id: uuid.UUID,
     created_by_id: uuid.UUID,
 ) -> BrowserTaskExecution:
-    """Run a simulated browser session and persist logs and results."""
+    """Run a Playwright browser session and persist logs and results."""
     task = get_browser_task_or_404(
         db,
         task_id=task_id,
@@ -109,6 +122,11 @@ def run_browser_task(
         organization_id=organization_id,
     )
 
+    task_config = parse_browser_task_config(task.config)
+    secrets = task_config.secrets or {}
+    steps = resolve_execution_steps(config=task.config, target_url=task.target_url.strip())
+    step_count = len(steps)
+
     started_at = datetime.now(UTC)
     execution = BrowserTaskExecution(
         organization_id=organization_id,
@@ -119,8 +137,10 @@ def run_browser_task(
         started_at=started_at,
         logs=[],
         execution_metadata={
-            "simulated": True,
-            "engine": "simulated",
+            "simulated": False,
+            "engine": "playwright",
+            "step_engine": True,
+            "steps_total": step_count,
             "browser_profile_slug": profile.slug,
             "browser_task_slug": task.slug,
         },
@@ -130,37 +150,39 @@ def run_browser_task(
 
     logs: list[dict[str, Any]] = []
     try:
-        _append_log(
-            logs,
-            level="info",
-            message=f"Launching simulated browser with profile '{profile.name}'",
-        )
-        if profile.user_agent:
-            _append_log(logs, level="info", message=f"User-Agent: {profile.user_agent}")
-        if profile.viewport_width and profile.viewport_height:
+        if task.instructions:
             _append_log(
                 logs,
                 level="info",
-                message=f"Viewport: {profile.viewport_width}x{profile.viewport_height}",
+                message=f"Task notes: {task.instructions}",
             )
 
-        _append_log(logs, level="info", message=f"Navigating to {task.target_url}")
-        _append_log(
-            logs,
-            level="info",
-            message=f"Executing instructions: {task.instructions or 'No instructions provided'}",
+        def on_log(level: str, message: str) -> None:
+            _append_log(logs, level=level, message=message)
+
+        page_result = run_playwright_task(
+            profile=profile,
+            organization_id=organization_id,
+            target_url=task.target_url.strip(),
+            steps=steps,
+            secrets=secrets,
+            task_config=task_config,
+            on_log=on_log,
         )
-        _append_log(logs, level="info", message="Simulated DOM extraction complete")
+
+        if page_result.session_saved:
+            mark_profile_session_saved(db, profile=profile)
 
         result = {
-            "simulated": True,
-            "target_url": task.target_url,
-            "page_title": f"Simulated page — {task.name}",
-            "extracted_text": (
-                f"Simulated extraction from {task.target_url}. "
-                f"Instructions applied: {task.instructions or 'none'}."
-            ),
-            "elements_found": 3,
+            "simulated": False,
+            "target_url": page_result.target_url,
+            "final_url": page_result.final_url,
+            "page_title": page_result.page_title,
+            "extracted_text": page_result.extracted_text,
+            "extracted": page_result.extracted,
+            "elements_found": page_result.elements_found,
+            "steps_completed": page_result.steps_completed,
+            "step_count": page_result.step_count,
         }
 
         completed_at = datetime.now(UTC)
@@ -170,16 +192,52 @@ def run_browser_task(
         execution.completed_at = completed_at
         execution.execution_metadata = {
             **(execution.execution_metadata or {}),
+            "steps_completed": page_result.steps_completed,
+            "session_loaded": page_result.session_loaded,
+            "session_saved": page_result.session_saved,
+            "session_persistence_enabled": profile.session_persistence_enabled,
             "duration_seconds": (completed_at - started_at).total_seconds(),
             "log_count": len(logs),
         }
-    except Exception as exc:
+    except StepExecutionError as exc:
         completed_at = datetime.now(UTC)
-        _append_log(logs, level="error", message=str(exc))
+        error_message = format_playwright_error(exc)
+        _append_log(logs, level="error", message=error_message)
         execution.status = BrowserTaskExecutionStatus.FAILED
-        execution.error_message = str(exc)
+        execution.error_message = error_message
         execution.logs = logs
         execution.completed_at = completed_at
+        execution.result = {
+            "simulated": False,
+            "steps_completed": exc.step_index,
+            "step_count": step_count,
+            "extracted": {},
+        }
+        execution.execution_metadata = {
+            **(execution.execution_metadata or {}),
+            "steps_completed": exc.step_index,
+            "failed_step": _failed_step_metadata(exc),
+            "duration_seconds": (completed_at - started_at).total_seconds(),
+            "log_count": len(logs),
+        }
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Browser task execution failed",
+        ) from exc
+    except Exception as exc:
+        completed_at = datetime.now(UTC)
+        error_message = format_playwright_error(exc)
+        _append_log(logs, level="error", message=error_message)
+        execution.status = BrowserTaskExecutionStatus.FAILED
+        execution.error_message = error_message
+        execution.logs = logs
+        execution.completed_at = completed_at
+        execution.execution_metadata = {
+            **(execution.execution_metadata or {}),
+            "duration_seconds": (completed_at - started_at).total_seconds(),
+            "log_count": len(logs),
+        }
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

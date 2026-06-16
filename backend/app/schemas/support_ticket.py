@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -67,6 +68,8 @@ class SupportTicketResponse(BaseModel):
     customer_email: str | None
     status: SupportTicketStatus
     priority: SupportTicketPriority
+    resolved_at: datetime | None = None
+    resolved_message_id: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -78,12 +81,15 @@ class SupportTicketDetailResponse(SupportTicketResponse):
     assigned_user_name: str | None = None
     assigned_ai_employee_name: str | None = None
     message_count: int = 0
+    has_resolution: bool = False
 
 
 class SupportMessageCreateRequest(BaseModel):
     content: StrippedSupportMessageContent
     role: SupportMessageRole = SupportMessageRole.AGENT
     is_internal: bool = False
+    resolve_ticket: bool = False
+    as_ai_employee: bool = False
 
 
 class SupportMessageResponse(BaseModel):
@@ -100,6 +106,15 @@ class SupportMessageResponse(BaseModel):
     author_ai_employee_name: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class SupportAiSuggestionResponse(BaseModel):
+    suggestion: str
+    sources: list[dict[str, Any]] = Field(default_factory=list)
+    confidence: float = Field(ge=0.0, le=1.0)
+    recommended_status: SupportTicketStatus
+    reasoning: str
+    can_auto_resolve: bool = False
 
 
 class SupportAnalyticsResponse(BaseModel):

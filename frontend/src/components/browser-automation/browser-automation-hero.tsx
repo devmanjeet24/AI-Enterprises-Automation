@@ -62,7 +62,7 @@ export function BrowserAutomationHero({
             and instructions, and track execution history across your organization.
           </p>
           <p className="mt-2 text-[12px] text-tertiary">
-            Runs use the simulated engine until Playwright integration ships.
+            Runs use Playwright with headless Chromium to open real pages and extract live content.
           </p>
         </div>
 

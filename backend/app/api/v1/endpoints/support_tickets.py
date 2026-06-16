@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.config import Settings, get_settings
 from app.core.authorization import require_permission
 from app.core.permissions import (
     SUPPORT_TICKETS_DELETE,
@@ -17,6 +18,7 @@ from app.core.permissions import (
 from app.models.enums import SupportTicketPriority, SupportTicketStatus
 from app.models.user import User
 from app.schemas.support_ticket import (
+    SupportAiSuggestionResponse,
     SupportAnalyticsResponse,
     SupportMessageCreateRequest,
     SupportMessageResponse,
@@ -25,6 +27,10 @@ from app.schemas.support_ticket import (
     SupportTicketResponse,
     SupportTicketUpdateRequest,
 )
+from app.services.chroma_service import ChromaService
+from app.services.employee_rag_service import EmployeeRAGService
+from app.services.embedding_service import EmbeddingService
+from app.services.retrieval_service import get_cached_embedding_service
 from app.services.support_analytics_service import get_support_analytics
 from app.services.support_ticket_service import (
     build_ticket_detail_response,
@@ -34,10 +40,29 @@ from app.services.support_ticket_service import (
     get_support_ticket_or_404,
     list_support_tickets,
     list_ticket_messages,
+    suggest_ai_response,
     update_support_ticket,
 )
 
 router = APIRouter(prefix="/support-tickets", tags=["support-tickets"])
+
+
+def get_embedding_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> EmbeddingService:
+    return get_cached_embedding_service(settings.embedding_model_name)
+
+
+def get_chroma_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ChromaService:
+    return ChromaService(settings.chroma_persist_dir)
+
+
+def get_employee_rag_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> EmployeeRAGService:
+    return EmployeeRAGService(settings)
 
 
 @router.get("/analytics", response_model=SupportAnalyticsResponse)
@@ -172,4 +197,31 @@ def create_ticket_message_endpoint(
         ticket=ticket,
         author_user_id=current_user.id,
         payload=payload,
+    )
+
+
+@router.post(
+    "/{ticket_id}/suggest-response",
+    response_model=SupportAiSuggestionResponse,
+)
+def suggest_ai_response_endpoint(
+    ticket_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_permission(SUPPORT_TICKETS_EXECUTE))],
+    db: Annotated[Session, Depends(get_db)],
+    embedding_service: Annotated[EmbeddingService, Depends(get_embedding_service)],
+    chroma_service: Annotated[ChromaService, Depends(get_chroma_service)],
+    employee_rag_service: Annotated[EmployeeRAGService, Depends(get_employee_rag_service)],
+) -> SupportAiSuggestionResponse:
+    """Generate an AI-assisted reply suggestion for a support ticket."""
+    ticket = get_support_ticket_or_404(
+        db,
+        ticket_id=ticket_id,
+        organization_id=current_user.organization_id,
+    )
+    return suggest_ai_response(
+        db,
+        ticket=ticket,
+        embedding_service=embedding_service,
+        chroma_service=chroma_service,
+        employee_rag_service=employee_rag_service,
     )

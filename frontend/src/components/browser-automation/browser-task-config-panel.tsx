@@ -17,11 +17,24 @@ import {
   useUpdateBrowserTask,
 } from "@/hooks/use-browser-automation";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import {
+  buildTaskConfig,
+  getSecretsFromConfig,
+  type BrowserTaskSecrets,
+} from "@/lib/browser-automation/secrets";
+import {
+  getStepsFromConfig,
+  validateStepsForSave,
+  type BrowserTaskStep,
+} from "@/lib/browser-automation/steps";
 import { canRunBrowserTask } from "@/lib/browser-automation/run-messages";
 import type { BrowserTaskDetail, BrowserTaskStatus } from "@/lib/browser-automation/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
+
+import { BrowserTaskStepsEditor } from "./browser-task-steps-editor";
+import { BrowserTaskSecretsEditor } from "./browser-task-secrets-editor";
 
 interface BrowserTaskConfigPanelProps {
   task: BrowserTaskDetail;
@@ -48,6 +61,10 @@ export function BrowserTaskConfigPanel({
   const [instructions, setInstructions] = useState(task.instructions ?? "");
   const [status, setStatus] = useState(task.status);
   const [browserProfileId, setBrowserProfileId] = useState(task.browser_profile_id);
+  const [steps, setSteps] = useState<BrowserTaskStep[]>(() => getStepsFromConfig(task.config));
+  const [secrets, setSecrets] = useState<BrowserTaskSecrets>(() =>
+    getSecretsFromConfig(task.config),
+  );
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -56,6 +73,8 @@ export function BrowserTaskConfigPanel({
     setInstructions(task.instructions ?? "");
     setStatus(task.status);
     setBrowserProfileId(task.browser_profile_id);
+    setSteps(getStepsFromConfig(task.config));
+    setSecrets(getSecretsFromConfig(task.config));
     setHasChanges(false);
   }, [
     task.id,
@@ -64,6 +83,7 @@ export function BrowserTaskConfigPanel({
     task.instructions,
     task.status,
     task.browser_profile_id,
+    task.config,
     task.updated_at,
   ]);
 
@@ -71,6 +91,12 @@ export function BrowserTaskConfigPanel({
   const isSaving = updateMutation.isPending;
 
   const handleSave = async () => {
+    const stepsError = validateStepsForSave(steps);
+    if (stepsError) {
+      toast.error(stepsError);
+      return;
+    }
+
     try {
       await updateMutation.mutateAsync({
         name: name.trim(),
@@ -78,6 +104,7 @@ export function BrowserTaskConfigPanel({
         instructions: instructions.trim() || null,
         status,
         browser_profile_id: browserProfileId,
+        config: buildTaskConfig(task.config, steps, secrets),
       });
       toast.success("Task configuration saved.");
       setHasChanges(false);
@@ -97,7 +124,7 @@ export function BrowserTaskConfigPanel({
               Task configuration
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              Update task name, target URL, instructions, status, and linked profile.
+              Update task settings, automation steps, and linked profile.
             </p>
           </div>
           {canWrite && (
@@ -146,17 +173,17 @@ export function BrowserTaskConfigPanel({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="task-config-instructions">Instructions</Label>
+            <Label htmlFor="task-config-instructions">Notes (optional)</Label>
             <textarea
               id="task-config-instructions"
-              rows={6}
+              rows={3}
               value={instructions}
               onChange={(e) => {
                 setInstructions(e.target.value);
                 markChanged();
               }}
               disabled={!canWrite || isSaving}
-              placeholder="Describe the steps the browser should perform…"
+              placeholder="Human-readable notes about this automation…"
               className={cn(
                 "flex w-full resize-none rounded-xl border border-border bg-white/[0.04] px-4 py-3 text-sm text-foreground transition-colors",
                 "placeholder:text-tertiary",
@@ -165,6 +192,24 @@ export function BrowserTaskConfigPanel({
               )}
             />
           </div>
+
+          <BrowserTaskSecretsEditor
+            secrets={secrets}
+            disabled={!canWrite || isSaving}
+            onChange={(nextSecrets) => {
+              setSecrets(nextSecrets);
+              markChanged();
+            }}
+          />
+
+          <BrowserTaskStepsEditor
+            steps={steps}
+            disabled={!canWrite || isSaving}
+            onChange={(nextSteps) => {
+              setSteps(nextSteps);
+              markChanged();
+            }}
+          />
 
           {canWrite ? (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -301,7 +346,13 @@ export function BrowserTaskConfigPanel({
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Instructions length</dt>
+              <dt className="text-muted-foreground">Configured steps</dt>
+              <dd className="font-medium text-foreground">
+                {steps.length > 0 ? steps.length : "Default pipeline"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Notes length</dt>
               <dd className="font-medium text-foreground">
                 {(task.instructions ?? "").length} chars
               </dd>

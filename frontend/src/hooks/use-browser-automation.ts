@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  clearBrowserProfileSession,
   createBrowserProfile,
   deleteBrowserProfile,
   getBrowserProfile,
@@ -190,6 +191,19 @@ export function useUpdateBrowserProfile(profileId: string) {
   });
 }
 
+export function useClearBrowserProfileSession(profileId: string) {
+  const token = useAuthToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => clearBrowserProfileSession(token!, profileId),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(browserAutomationKeys.profileDetail(profileId), profile);
+      queryClient.invalidateQueries({ queryKey: browserAutomationKeys.profileLists() });
+    },
+  });
+}
+
 export function useDeleteBrowserProfile() {
   const token = useAuthToken();
   const queryClient = useQueryClient();
@@ -269,6 +283,7 @@ export function useRunBrowserTask(taskId: string) {
       );
       queryClient.invalidateQueries({ queryKey: browserAutomationKeys.executions() });
       queryClient.invalidateQueries({ queryKey: browserAutomationKeys.analytics() });
+      queryClient.invalidateQueries({ queryKey: browserAutomationKeys.profileLists() });
     },
   });
 }

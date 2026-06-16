@@ -2,8 +2,10 @@
 
 from fastapi.testclient import TestClient
 
+SELENIUM_FORM_URL = "https://www.selenium.dev/selenium/web/web-form.html"
 
-def _create_ready_task(client: TestClient, headers: dict[str, str]) -> dict:
+
+def _create_ready_task(client: TestClient, headers: dict[str, str], **task_overrides) -> dict:
     profile = client.post(
         "/api/v1/browser-profiles",
         json={
@@ -14,14 +16,16 @@ def _create_ready_task(client: TestClient, headers: dict[str, str]) -> dict:
         },
         headers=headers,
     ).json()
+    task_payload = {
+        "name": "Pricing Scrape",
+        "browser_profile_id": profile["id"],
+        "target_url": "https://example.com",
+        "instructions": "Extract pricing tiers.",
+    }
+    task_payload.update(task_overrides)
     task = client.post(
         "/api/v1/browser-tasks",
-        json={
-            "name": "Pricing Scrape",
-            "browser_profile_id": profile["id"],
-            "target_url": "https://example.com/pricing",
-            "instructions": "Extract pricing tiers.",
-        },
+        json=task_payload,
         headers=headers,
     ).json()
     ready = client.patch(
@@ -46,7 +50,12 @@ def test_run_browser_task_stores_execution_logs_and_results(
     assert run.status_code == 201, run.text
     execution = run.json()
     assert execution["status"] == "completed"
-    assert execution["result"]["simulated"] is True
+    assert execution["result"]["simulated"] is False
+    assert execution["result"]["page_title"] == "Example Domain"
+    assert "example" in execution["result"]["extracted_text"].lower()
+    assert execution["result"]["target_url"] == "https://example.com"
+    assert execution["execution_metadata"]["engine"] == "playwright"
+    assert execution["execution_metadata"]["step_engine"] is True
     assert execution["logs"] is not None
     assert len(execution["logs"]) >= 3
     assert execution["started_at"] is not None
@@ -65,6 +74,95 @@ def test_run_browser_task_stores_execution_logs_and_results(
     )
     assert detail.status_code == 200
     assert detail.json()["id"] == execution["id"]
+
+
+def test_run_browser_task_with_step_sequence(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    task = _create_ready_task(
+        client,
+        auth_headers,
+        name="Form Interaction Task",
+        target_url=SELENIUM_FORM_URL,
+        config={
+            "steps": [
+                {"action": "goto", "url": "{{target_url}}"},
+                {"action": "wait_for_selector", "selector": "input[name='my-text']"},
+                {"action": "fill", "selector": "input[name='my-text']", "value": "Hello Browser"},
+                {"action": "click", "selector": "#my-check-2"},
+                {
+                    "action": "extract",
+                    "selectors": [
+                        {
+                            "name": "text_input",
+                            "selector": "input[name='my-text']",
+                            "attribute": "value",
+                        },
+                        {
+                            "name": "checkbox_checked",
+                            "selector": "#my-check-2",
+                            "attribute": "checked",
+                        },
+                    ],
+                },
+            ]
+        },
+    )
+
+    run = client.post(
+        f"/api/v1/browser-tasks/{task['id']}/run",
+        headers=auth_headers,
+    )
+    assert run.status_code == 201, run.text
+    execution = run.json()
+    assert execution["status"] == "completed"
+    assert execution["result"]["steps_completed"] == 5
+    assert execution["result"]["extracted"]["text_input"] == "Hello Browser"
+    assert execution["result"]["extracted"]["checkbox_checked"] is True
+    assert any("Step 3/5: fill" in entry["message"] for entry in execution["logs"])
+    assert any("Step 4/5: click" in entry["message"] for entry in execution["logs"])
+
+
+def test_step_failure_records_failed_step(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    task = _create_ready_task(
+        client,
+        auth_headers,
+        name="Failing Step Task",
+        target_url="https://example.com",
+        config={
+            "steps": [
+                {"action": "goto", "url": "{{target_url}}"},
+                {"action": "click", "selector": "#does-not-exist"},
+                {
+                    "action": "extract",
+                    "selectors": [{"name": "title", "selector": "h1"}],
+                },
+            ]
+        },
+    )
+
+    run = client.post(
+        f"/api/v1/browser-tasks/{task['id']}/run",
+        headers=auth_headers,
+    )
+    assert run.status_code == 500
+    executions = client.get(
+        f"/api/v1/browser-tasks/{task['id']}/executions",
+        headers=auth_headers,
+    ).json()
+    assert len(executions) == 1
+    execution = client.get(
+        f"/api/v1/browser-tasks/executions/{executions[0]['id']}",
+        headers=auth_headers,
+    ).json()
+    assert execution["status"] == "failed"
+    assert execution["execution_metadata"]["failed_step"]["index"] == 1
+    assert execution["execution_metadata"]["failed_step"]["action"] == "click"
+    assert execution["result"]["steps_completed"] == 1
 
 
 def test_browser_analytics_and_org_execution_history(

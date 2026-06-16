@@ -40,6 +40,9 @@ export function BrowserProfileConfigPanel({
   const [viewportHeight, setViewportHeight] = useState(
     profile.viewport_height?.toString() ?? "",
   );
+  const [sessionPersistenceEnabled, setSessionPersistenceEnabled] = useState(
+    profile.session_persistence_enabled,
+  );
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -48,6 +51,7 @@ export function BrowserProfileConfigPanel({
     setUserAgent(profile.user_agent ?? "");
     setViewportWidth(profile.viewport_width?.toString() ?? "");
     setViewportHeight(profile.viewport_height?.toString() ?? "");
+    setSessionPersistenceEnabled(profile.session_persistence_enabled);
     setHasChanges(false);
   }, [
     profile.id,
@@ -56,6 +60,7 @@ export function BrowserProfileConfigPanel({
     profile.user_agent,
     profile.viewport_width,
     profile.viewport_height,
+    profile.session_persistence_enabled,
     profile.updated_at,
   ]);
 
@@ -70,6 +75,7 @@ export function BrowserProfileConfigPanel({
         user_agent: userAgent.trim() || null,
         viewport_width: viewportWidth ? Number.parseInt(viewportWidth, 10) : null,
         viewport_height: viewportHeight ? Number.parseInt(viewportHeight, 10) : null,
+        session_persistence_enabled: sessionPersistenceEnabled,
       });
       toast.success("Profile configuration saved.");
       setHasChanges(false);
@@ -188,6 +194,27 @@ export function BrowserProfileConfigPanel({
               />
             </div>
           </div>
+
+          <label className="flex items-start gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+            <input
+              type="checkbox"
+              checked={sessionPersistenceEnabled}
+              disabled={!canWrite || isSaving}
+              onChange={(event) => {
+                setSessionPersistenceEnabled(event.target.checked);
+                markChanged();
+              }}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-[13px] font-medium text-foreground">
+                Enable session persistence
+              </span>
+              <span className="mt-1 block text-[12px] text-muted-foreground">
+                Save cookies and localStorage after each successful run so login state is reused.
+              </span>
+            </span>
+          </label>
 
           {!canWrite && (
             <p className="text-[12px] text-muted-foreground">

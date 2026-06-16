@@ -22,6 +22,7 @@ class BrowserProfileCreateRequest(BaseModel):
     viewport_width: int | None = Field(default=None, ge=1, le=10000)
     viewport_height: int | None = Field(default=None, ge=1, le=10000)
     config: dict[str, Any] | None = None
+    session_persistence_enabled: bool = False
 
 
 class BrowserProfileUpdateRequest(BaseModel):
@@ -33,6 +34,7 @@ class BrowserProfileUpdateRequest(BaseModel):
     viewport_height: int | None = Field(default=None, ge=1, le=10000)
     config: dict[str, Any] | None = None
     is_active: bool | None = None
+    session_persistence_enabled: bool | None = None
 
 
 class BrowserProfileResponse(BaseModel):
@@ -47,6 +49,9 @@ class BrowserProfileResponse(BaseModel):
     viewport_height: int | None
     config: dict[str, Any] | None
     is_active: bool
+    session_persistence_enabled: bool
+    session_updated_at: datetime | None
+    session_stored: bool = False
     created_at: datetime
     updated_at: datetime
 

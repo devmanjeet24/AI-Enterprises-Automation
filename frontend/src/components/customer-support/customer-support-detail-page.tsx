@@ -133,7 +133,13 @@ export function CustomerSupportDetailPage({ ticketId }: CustomerSupportDetailPag
       </div>
 
       <div className="grid gap-6 px-6 py-8 md:px-8 lg:grid-cols-[1fr_320px]">
-        <SupportTicketConversation ticketId={ticketId} canReply={canExecute} />
+        <SupportTicketConversation
+          ticketId={ticketId}
+          ticketStatus={ticket.status}
+          canReply={canExecute}
+          assignedAiEmployeeId={ticket.assigned_ai_employee_id}
+          assignedAiEmployeeName={ticket.assigned_ai_employee_name}
+        />
         <SupportTicketSidebar
           ticket={ticket}
           canWrite={canWrite}

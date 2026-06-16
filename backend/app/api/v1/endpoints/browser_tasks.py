@@ -157,7 +157,7 @@ def run_browser_task_endpoint(
     current_user: Annotated[User, Depends(require_permission(BROWSER_TASKS_EXECUTE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> BrowserTaskExecutionResponse:
-    """Run a simulated browser task and store logs and results."""
+    """Run a browser task with Playwright and store logs and results."""
     return run_browser_task(
         db,
         organization_id=current_user.organization_id,
