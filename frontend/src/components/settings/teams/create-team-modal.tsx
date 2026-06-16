@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { slugifyTeamName } from "@/config/teams";
 import { useDepartments } from "@/hooks/use-departments";
 import { useCreateTeam } from "@/hooks/use-teams";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { getCreateTeamBlockedMessage } from "@/lib/teams/guards";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
@@ -90,19 +90,22 @@ export function CreateTeamModal({
       return;
     }
 
-    try {
-      const team = await createMutation.mutateAsync({
-        department_id: departmentId,
-        name: name.trim(),
-        slug: slug.trim() || slugifyTeamName(name),
-        description: description.trim() || undefined,
-      });
-      toast.success(`"${team.name}" team created.`);
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create team."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          department_id: departmentId,
+          name: name.trim(),
+          slug: slug.trim() || slugifyTeamName(name),
+          description: description.trim() || undefined,
+        }),
+      toast,
+      successMessage: (team) => `Team "${team.name}" created successfully.`,
+      errorFallback: "Failed to create team.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   if (!open) return null;

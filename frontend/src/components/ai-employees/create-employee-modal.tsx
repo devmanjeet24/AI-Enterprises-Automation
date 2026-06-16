@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DEFAULT_SYSTEM_PROMPT } from "@/config/ai-employees";
 import { useCreateEmployee } from "@/hooks/use-ai-employees";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -57,21 +57,25 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
   };
 
   const handleCreate = async () => {
-    try {
-      const employee = await createMutation.mutateAsync({
-        name: name.trim(),
-        role: role.trim(),
-        description: description.trim() || undefined,
-        system_prompt: systemPrompt.trim(),
-        status: "inactive",
-      });
-      toast.success(`"${employee.name}" created successfully.`);
-      resetForm();
-      onClose();
-      router.push(`/ai-employees/${employee.id}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create employee."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          role: role.trim(),
+          description: description.trim() || undefined,
+          system_prompt: systemPrompt.trim(),
+          status: "inactive",
+        }),
+      toast,
+      successMessage: (employee) =>
+        `AI Employee "${employee.name}" created successfully.`,
+      errorFallback: "Failed to create AI employee.",
+      onSuccess: (employee) => {
+        resetForm();
+        onClose();
+        router.push(`/ai-employees/${employee.id}`);
+      },
+    });
   };
 
   if (!open) return null;

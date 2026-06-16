@@ -1,6 +1,7 @@
 "use client";
 
 import { FileText, Loader2, Upload, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { documentTypeOptions } from "@/config/knowledge-base";
 import { useUploadDocument } from "@/hooks/use-knowledge-base";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ interface DocumentUploadModalProps {
 }
 
 export function DocumentUploadModal({ open, onClose }: DocumentUploadModalProps) {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -93,18 +95,23 @@ export function DocumentUploadModal({ open, onClose }: DocumentUploadModalProps)
   const handleUpload = async () => {
     if (!selectedFile) return;
 
-    try {
-      const document = await uploadMutation.mutateAsync({
-        file: selectedFile,
-        title: title.trim() || undefined,
-        document_type: documentType || undefined,
-      });
-      toast.success(`"${document.title}" uploaded successfully.`);
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to upload document."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        uploadMutation.mutateAsync({
+          file: selectedFile,
+          title: title.trim() || undefined,
+          document_type: documentType || undefined,
+        }),
+      toast,
+      successMessage: (document) =>
+        `Document "${document.title}" uploaded. Run Process on the next screen.`,
+      errorFallback: "Failed to upload document.",
+      onSuccess: (document) => {
+        resetForm();
+        onClose();
+        router.push(`/knowledge-base/${document.id}`);
+      },
+    });
   };
 
   if (!open) return null;

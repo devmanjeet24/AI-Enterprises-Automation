@@ -21,11 +21,12 @@ import { cn } from "@/lib/utils";
 
 interface DocumentDetailActionsProps {
   document: KnowledgeDocument;
+  id?: string;
 }
 
 type PipelineAction = "process" | "chunk" | "embed" | "delete";
 
-export function DocumentDetailActions({ document }: DocumentDetailActionsProps) {
+export function DocumentDetailActions({ document, id }: DocumentDetailActionsProps) {
   const router = useRouter();
   const toast = useToast();
   const permissions = useUserPermissions();
@@ -92,24 +93,32 @@ export function DocumentDetailActions({ document }: DocumentDetailActionsProps) 
 
   if (!canWrite && !canDelete) {
     return (
-      <DashboardCard variant="panel" accent="purple" interactive={false} className="p-6">
-        <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-tertiary">
-          Actions
-        </p>
-        <p className="mt-3 text-[13px] text-muted-foreground">
-          You do not have permission to manage documents in this organization.
-        </p>
-      </DashboardCard>
+      <div id={id}>
+        <DashboardCard variant="panel" accent="purple" interactive={false} className="p-6">
+          <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-tertiary">
+            Pipeline actions
+          </p>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            You do not have permission to manage documents in this organization.
+          </p>
+        </DashboardCard>
+      </div>
     );
   }
 
+  const needsPipeline =
+    canProcess || canChunk || canEmbed || (canWrite && !isEmbedded);
+
   return (
-    <DashboardCard variant="panel" accent="purple" interactive={false} className="p-6">
+    <div id={id}>
+      <DashboardCard variant="panel" accent="purple" interactive={false} className="p-6">
       <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-tertiary">
-        Actions
+        Pipeline actions
       </p>
       <p className="mt-1 text-[13px] text-muted-foreground">
-        Run each pipeline step in order. Steps are disabled until prerequisites are met.
+        {needsPipeline
+          ? "Run Process, then Chunk, then Embed in order. Upload alone does not start processing."
+          : "Document pipeline is complete."}
       </p>
 
       {canWrite && (
@@ -195,6 +204,7 @@ export function DocumentDetailActions({ document }: DocumentDetailActionsProps) 
           </Button>
         </div>
       )}
-    </DashboardCard>
+      </DashboardCard>
+    </div>
   );
 }

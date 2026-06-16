@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { slugifyRoleName, SYSTEM_ROLE_SLUGS } from "@/config/roles";
 import { useCreateRole } from "@/hooks/use-roles";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -69,18 +69,21 @@ export function CreateRoleModal({ open, onClose }: CreateRoleModalProps) {
       return;
     }
 
-    try {
-      const role = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slug.trim() || slugifyRoleName(name),
-        description: description.trim() || undefined,
-      });
-      toast.success(`"${role.name}" role created.`);
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create role."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slug.trim() || slugifyRoleName(name),
+          description: description.trim() || undefined,
+        }),
+      toast,
+      successMessage: (role) => `Role "${role.name}" created successfully.`,
+      errorFallback: "Failed to create role.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   if (!open) return null;

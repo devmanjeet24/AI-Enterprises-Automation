@@ -9,6 +9,13 @@ NO_RELEVANT_INFORMATION_MESSAGE = (
 )
 
 
+def is_no_relevant_information_answer(answer: str) -> bool:
+    """Return True when the model declined to answer from retrieved context."""
+    normalized = answer.strip().strip('"').rstrip(".")
+    expected = NO_RELEVANT_INFORMATION_MESSAGE.rstrip(".")
+    return normalized == expected
+
+
 class KnowledgeQueryRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={

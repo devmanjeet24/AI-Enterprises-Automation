@@ -13,6 +13,7 @@ from app.schemas.knowledge_query import (
     NO_RELEVANT_INFORMATION_MESSAGE,
     KnowledgeQueryResponse,
     KnowledgeSourceCitation,
+    is_no_relevant_information_answer,
 )
 from app.schemas.knowledge_search import DocumentSearchResult
 from app.services.chroma_service import ChromaService
@@ -77,6 +78,11 @@ class RAGService:
             context=context,
             system_prompt=SYSTEM_PROMPT,
         )
+        if is_no_relevant_information_answer(answer):
+            return KnowledgeQueryResponse(
+                answer=NO_RELEVANT_INFORMATION_MESSAGE,
+                sources=[],
+            )
         sources = build_citations(relevant_results)
         return KnowledgeQueryResponse(answer=answer, sources=sources)
 

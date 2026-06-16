@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATEGORY_COLORS } from "@/config/customer-support";
 import { useCreateSupportCategory } from "@/hooks/use-support-tickets";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { useToast } from "@/providers/toast-provider";
 
 interface ManageCategoriesPanelProps {
@@ -53,18 +53,21 @@ export function ManageCategoriesPanel({ open, onClose }: ManageCategoriesPanelPr
   const handleCreate = async () => {
     if (!name.trim()) return;
 
-    try {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-        description: description.trim() || undefined,
-        color,
-      });
-      toast.success("Category created.");
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create category."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          color,
+        }),
+      toast,
+      successMessage: "Category created successfully.",
+      errorFallback: "Failed to create category.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   return (

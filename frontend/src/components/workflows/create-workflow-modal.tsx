@@ -12,7 +12,7 @@ import {
   useAssignableAgentTeams,
   useCreateWorkflow,
 } from "@/hooks/use-workflows";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -74,27 +74,30 @@ export function CreateWorkflowModal({ open, onClose }: CreateWorkflowModalProps)
   };
 
   const handleCreate = async () => {
-    try {
-      const workflow = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slug.trim() || slugifyWorkflowName(name),
-        description: description.trim() || undefined,
-        agent_team_id: agentTeamId,
-        steps: [
-          {
-            name: "Step 1",
-            description: "Define this step in the workflow builder.",
-            sequence_order: 0,
-          },
-        ],
-      });
-      toast.success(`"${workflow.name}" created successfully.`);
-      resetForm();
-      onClose();
-      router.push(`/workflows/${workflow.id}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create workflow."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slug.trim() || slugifyWorkflowName(name),
+          description: description.trim() || undefined,
+          agent_team_id: agentTeamId,
+          steps: [
+            {
+              name: "Step 1",
+              description: "Define this step in the workflow builder.",
+              sequence_order: 0,
+            },
+          ],
+        }),
+      toast,
+      successMessage: (workflow) => `Workflow "${workflow.name}" created successfully.`,
+      errorFallback: "Failed to create workflow.",
+      onSuccess: (workflow) => {
+        resetForm();
+        onClose();
+        router.push(`/workflows/${workflow.id}`);
+      },
+    });
   };
 
   if (!open) return null;

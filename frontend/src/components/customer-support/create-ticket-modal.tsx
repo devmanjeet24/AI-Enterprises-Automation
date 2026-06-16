@@ -14,7 +14,7 @@ import {
   useSupportCategories,
 } from "@/hooks/use-support-tickets";
 import { useUsers } from "@/hooks/use-users";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import type { SupportTicketPriority } from "@/lib/customer-support/types";
 import { useToast } from "@/providers/toast-provider";
 
@@ -77,26 +77,29 @@ export function CreateTicketModal({ open, onClose }: CreateTicketModalProps) {
   const handleCreate = async () => {
     if (!subject.trim()) return;
 
-    try {
-      const ticket = await createMutation.mutateAsync({
-        subject: subject.trim(),
-        slug: slugifyTicketSubject(subject),
-        description: description.trim() || undefined,
-        customer_name: customerName.trim() || undefined,
-        customer_email: customerEmail.trim() || undefined,
-        category_id: categoryId || undefined,
-        priority,
-        assigned_user_id: assignedUserId || undefined,
-        assigned_ai_employee_id: assignedEmployeeId || undefined,
-        initial_message: initialMessage.trim() || undefined,
-      });
-      toast.success("Ticket created.");
-      resetForm();
-      onClose();
-      router.push(`/customer-support/${ticket.id}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create ticket."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          subject: subject.trim(),
+          slug: slugifyTicketSubject(subject),
+          description: description.trim() || undefined,
+          customer_name: customerName.trim() || undefined,
+          customer_email: customerEmail.trim() || undefined,
+          category_id: categoryId || undefined,
+          priority,
+          assigned_user_id: assignedUserId || undefined,
+          assigned_ai_employee_id: assignedEmployeeId || undefined,
+          initial_message: initialMessage.trim() || undefined,
+        }),
+      toast,
+      successMessage: "Ticket created successfully.",
+      errorFallback: "Failed to create ticket.",
+      onSuccess: (ticket) => {
+        resetForm();
+        onClose();
+        router.push(`/customer-support/${ticket.id}`);
+      },
+    });
   };
 
   return (

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { slugifyDepartmentName } from "@/config/departments";
 import { useCreateDepartment } from "@/hooks/use-departments";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -62,18 +62,22 @@ export function CreateDepartmentModal({ open, onClose }: CreateDepartmentModalPr
   };
 
   const handleCreate = async () => {
-    try {
-      const department = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slug.trim() || slugifyDepartmentName(name),
-        description: description.trim() || undefined,
-      });
-      toast.success(`"${department.name}" department created.`);
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create department."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slug.trim() || slugifyDepartmentName(name),
+          description: description.trim() || undefined,
+        }),
+      toast,
+      successMessage: (department) =>
+        `Department "${department.name}" created successfully.`,
+      errorFallback: "Failed to create department.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   if (!open) return null;

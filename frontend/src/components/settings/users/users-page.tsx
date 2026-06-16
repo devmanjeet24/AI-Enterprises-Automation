@@ -30,12 +30,13 @@ export function UsersPage() {
   const accent = dashboardAccents.emerald;
 
   const {
-    data: users = [],
+    data: usersData,
     isLoading,
     isError,
     error,
     refetch,
   } = useUsers();
+  const users = Array.isArray(usersData) ? usersData : [];
 
   const filteredUsers = useMemo(
     () => filterUsersByStatus(users, statusFilter),
@@ -63,6 +64,18 @@ export function UsersPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="px-6 py-8 md:px-8">
+        <UsersError
+          title="Failed to load users"
+          message={errorMessage!}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-10 md:pb-12">
       <UsersHero users={users} />
@@ -84,13 +97,7 @@ export function UsersPage() {
             description="Open a user to edit their profile, manage roles, or change account status."
           />
 
-          {isError ? (
-            <UsersError
-              title="Failed to load users"
-              message={errorMessage!}
-              onRetry={() => refetch()}
-            />
-          ) : users.length === 0 ? (
+          {users.length === 0 ? (
             <UsersEmptyState />
           ) : (
             <>

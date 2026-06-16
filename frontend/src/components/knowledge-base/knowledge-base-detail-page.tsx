@@ -108,10 +108,9 @@ export function KnowledgeBaseDetailPage({
       <div className="mt-8 space-y-6 px-6 md:mt-10 md:px-8">
         <DocumentPipelineSteps document={document} />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <DocumentDetailMetadata document={document} />
-          <DocumentDetailActions document={document} />
-        </div>
+        <DocumentDetailActions document={document} id="document-pipeline-actions" />
+
+        <DocumentDetailMetadata document={document} />
       </div>
     </div>
   );

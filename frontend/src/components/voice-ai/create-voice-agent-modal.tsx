@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { slugifyVoiceAgentName } from "@/config/voice-ai";
 import { useEmployees } from "@/hooks/use-ai-employees";
 import { useCreateVoiceAgent } from "@/hooks/use-voice-ai";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { useToast } from "@/providers/toast-provider";
 
 interface CreateVoiceAgentModalProps {
@@ -58,20 +58,23 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
   const handleCreate = async () => {
     if (!name.trim() || !aiEmployeeId) return;
 
-    try {
-      const agent = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slugifyVoiceAgentName(name),
-        description: description.trim() || undefined,
-        ai_employee_id: aiEmployeeId,
-      });
-      toast.success("Voice agent created.");
-      resetForm();
-      onClose();
-      router.push(`/voice-ai/${agent.id}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create voice agent."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slugifyVoiceAgentName(name),
+          description: description.trim() || undefined,
+          ai_employee_id: aiEmployeeId,
+        }),
+      toast,
+      successMessage: "Voice agent created successfully.",
+      errorFallback: "Failed to create voice agent.",
+      onSuccess: (agent) => {
+        resetForm();
+        onClose();
+        router.push(`/voice-ai/${agent.id}`);
+      },
+    });
   };
 
   return (

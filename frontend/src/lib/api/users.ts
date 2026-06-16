@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client";
+import { normalizeUser, normalizeUsers } from "@/lib/users/normalize";
 import type {
   AssignRoleInput,
   UpdateUserInput,
@@ -8,12 +9,21 @@ import type {
 
 const USERS_BASE = "/api/v1/users";
 
-export function listUsers(token: string): Promise<User[]> {
-  return apiClient<User[]>(USERS_BASE, { method: "GET", token });
+export async function listUsers(token: string): Promise<User[]> {
+  const payload = await apiClient<unknown>(USERS_BASE, { method: "GET", token });
+  return normalizeUsers(payload);
 }
 
-export function getUser(token: string, userId: string): Promise<User> {
-  return apiClient<User>(`${USERS_BASE}/${userId}`, { method: "GET", token });
+export async function getUser(token: string, userId: string): Promise<User> {
+  const payload = await apiClient<unknown>(`${USERS_BASE}/${userId}`, {
+    method: "GET",
+    token,
+  });
+  const user = normalizeUser(payload);
+  if (!user) {
+    throw new Error("Invalid user response from server.");
+  }
+  return user;
 }
 
 export function updateUser(

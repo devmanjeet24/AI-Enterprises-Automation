@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { slugifyOmnichannelName } from "@/config/omnichannel";
 import { useEmployees } from "@/hooks/use-ai-employees";
 import { useCreateOmnichannelChannel } from "@/hooks/use-omnichannel";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import type { OmnichannelChannelType } from "@/lib/omnichannel/types";
 import { useToast } from "@/providers/toast-provider";
 
@@ -60,20 +60,23 @@ export function CreateOmnichannelChannelModal({
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    try {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slugifyOmnichannelName(name),
-        description: description.trim() || undefined,
-        channel_type: channelType,
-        ai_employee_id: aiEmployeeId || undefined,
-      });
-      toast.success("Channel created.");
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create channel."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slugifyOmnichannelName(name),
+          description: description.trim() || undefined,
+          channel_type: channelType,
+          ai_employee_id: aiEmployeeId || undefined,
+        }),
+      toast,
+      successMessage: "Channel created successfully.",
+      errorFallback: "Failed to create channel.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   return (
