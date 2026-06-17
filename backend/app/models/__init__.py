@@ -18,6 +18,7 @@ from app.models.support_ticket_message import SupportTicketMessage
 from app.models.voice_agent import VoiceAgent
 from app.models.voice_session import VoiceSession
 from app.models.voice_transcript import VoiceTranscript
+from app.models.omnichannel_audit_log import OmnichannelAuditLog
 from app.models.omnichannel_channel import OmnichannelChannel
 from app.models.omnichannel_conversation import OmnichannelConversation
 from app.models.omnichannel_message import OmnichannelMessage
@@ -29,6 +30,7 @@ from app.models.enums import (
     BrowserTaskStatus,
     DocumentStatus,
     MessageRole,
+    OmnichannelAuditAction,
     OmnichannelChannelType,
     OmnichannelConversationStatus,
     OmnichannelHandoffStatus,
@@ -80,6 +82,8 @@ __all__ = [
     "DocumentChunk",
     "DocumentStatus",
     "KnowledgeDocument",
+    "OmnichannelAuditLog",
+    "OmnichannelAuditAction",
     "OmnichannelChannel",
     "OmnichannelChannelType",
     "OmnichannelConversation",

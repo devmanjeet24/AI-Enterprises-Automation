@@ -2,6 +2,8 @@ export type OmnichannelChannelType =
   | "website_chat"
   | "telegram"
   | "slack"
+  | "email"
+  | "whatsapp"
   | "internal";
 
 export type OmnichannelConversationStatus =
@@ -34,6 +36,7 @@ export interface OmnichannelChannel {
   description: string | null;
   config: Record<string, unknown> | null;
   is_active: boolean;
+  public_key: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +61,8 @@ export interface OmnichannelConversation {
   handoff_status: OmnichannelHandoffStatus;
   shared_context: Record<string, unknown> | null;
   last_message_at: string | null;
+  support_ticket_id: string | null;
+  resolved_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -90,6 +95,7 @@ export interface OmnichannelConversationDetail extends OmnichannelConversation {
   assigned_user_name: string | null;
   assigned_ai_employee_name: string | null;
   message_count: number;
+  has_resolution: boolean;
   messages: OmnichannelMessage[];
 }
 

@@ -45,6 +45,7 @@ class OmnichannelChannelResponse(BaseModel):
     description: str | None
     config: dict[str, Any] | None
     is_active: bool
+    public_key: str | None = None
     created_at: datetime
     updated_at: datetime
 

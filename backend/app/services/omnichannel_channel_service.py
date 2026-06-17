@@ -1,5 +1,6 @@
 """Create and manage omnichannel communication channels."""
 
+import secrets
 import uuid
 
 from fastapi import HTTPException, status
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.text import slugify
 from app.models.ai_employee import AIEmployee
-from app.models.enums import AIEmployeeStatus
+from app.models.enums import AIEmployeeStatus, OmnichannelChannelType
 from app.models.omnichannel_channel import OmnichannelChannel
 from app.models.omnichannel_conversation import OmnichannelConversation
 from app.schemas.omnichannel_channel import (
@@ -17,6 +18,7 @@ from app.schemas.omnichannel_channel import (
     OmnichannelChannelUpdateRequest,
 )
 from app.services.ai_employee_service import get_employee_or_404
+from app.services.omnichannel_widget_service import generate_channel_public_key
 
 
 def _resolve_slug(name: str, slug: str | None) -> str:
@@ -115,6 +117,11 @@ def create_omnichannel_channel(
         description=payload.description,
         ai_employee_id=payload.ai_employee_id,
         config=payload.config,
+        public_key=(
+            generate_channel_public_key()
+            if payload.channel_type == OmnichannelChannelType.WEBSITE_CHAT
+            else None
+        ),
     )
     db.add(channel)
     db.commit()
@@ -153,6 +160,12 @@ def update_omnichannel_channel(
     ):
         if field in updates:
             setattr(channel, field, updates[field])
+
+    if (
+        channel.channel_type == OmnichannelChannelType.WEBSITE_CHAT
+        and channel.public_key is None
+    ):
+        channel.public_key = generate_channel_public_key()
 
     if "slug" in updates or "name" in updates:
         slug = _resolve_slug(
@@ -202,6 +215,7 @@ def build_omnichannel_channel_detail_response(
         description=channel.description,
         config=channel.config,
         is_active=channel.is_active,
+        public_key=channel.public_key,
         created_at=channel.created_at,
         updated_at=channel.updated_at,
         ai_employee_name=employee.name if employee else None,

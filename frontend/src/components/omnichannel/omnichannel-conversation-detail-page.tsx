@@ -4,12 +4,12 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, UserCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DashboardCard } from "@/components/dashboard/dashboard-card";
-import { channelTypeLabels, formatDateTime } from "@/config/omnichannel";
+import { channelTypeLabels } from "@/config/omnichannel";
 import {
   useOmnichannelConversation,
   useRequestHumanHandoff,
 } from "@/hooks/use-omnichannel";
+import { useOmnichannelRealtime } from "@/hooks/use-omnichannel-realtime";
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/api/client";
 import { getApiErrorMessage } from "@/lib/api/errors";
@@ -24,6 +24,7 @@ import {
   OmnichannelStatusBadge,
 } from "./omnichannel-badges";
 import { OmnichannelConversationThread } from "./omnichannel-conversation-thread";
+import { OmnichannelConversationSidebar } from "./omnichannel-conversation-sidebar";
 import { OmnichannelError } from "./omnichannel-error";
 import { OmnichannelConversationDetailSkeleton } from "./omnichannel-skeleton";
 
@@ -35,6 +36,8 @@ export function OmnichannelConversationDetailPage({
   const toast = useToast();
   const permissions = useUserPermissions();
   const canExecute = hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CONVERSATIONS_EXECUTE);
+  const canWrite = hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CONVERSATIONS_WRITE);
+  useOmnichannelRealtime();
 
   const { data: conversation, isLoading, isError, error, refetch } =
     useOmnichannelConversation(conversationId);
@@ -125,43 +128,7 @@ export function OmnichannelConversationDetailPage({
           canReply={canExecute}
         />
 
-        <DashboardCard variant="panel" accent="purple" className="p-5">
-          <h3 className="text-[14px] font-medium text-foreground">Shared context</h3>
-          <dl className="mt-4 space-y-3 text-[13px]">
-            <div>
-              <dt className="text-muted-foreground">Contact</dt>
-              <dd className="mt-0.5">{conversation.external_contact_name ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Assigned agent</dt>
-              <dd className="mt-0.5">{conversation.assigned_user_name ?? "Unassigned"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">AI employee</dt>
-              <dd className="mt-0.5">
-                {conversation.assigned_ai_employee_id ? (
-                  <Link
-                    href={`/ai-employees/${conversation.assigned_ai_employee_id}`}
-                    className="font-medium text-foreground transition-colors hover:text-brand"
-                  >
-                    {conversation.assigned_ai_employee_name ?? "View employee"}
-                  </Link>
-                ) : (
-                  (conversation.assigned_ai_employee_name ?? "—")
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Last activity</dt>
-              <dd className="mt-0.5">{formatDateTime(conversation.last_message_at)}</dd>
-            </div>
-          </dl>
-          {conversation.shared_context && Object.keys(conversation.shared_context).length > 0 && (
-            <pre className="mt-4 overflow-x-auto rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-muted-foreground">
-              {JSON.stringify(conversation.shared_context, null, 2)}
-            </pre>
-          )}
-        </DashboardCard>
+        <OmnichannelConversationSidebar conversation={conversation} canWrite={canWrite} />
       </div>
     </div>
   );

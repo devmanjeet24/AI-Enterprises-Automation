@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     frontend_url: str = "http://localhost:3000"
+    api_public_url: str = "http://localhost:8000"
 
     database_url: str
 

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class OmnichannelChannel(Base, TimestampMixin):
-    """Channel configuration for omnichannel communication (simulated connectors)."""
+    """Channel configuration for omnichannel communication connectors."""
 
     __tablename__ = "omnichannel_channels"
     __table_args__ = (
@@ -64,6 +64,7 @@ class OmnichannelChannel(Base, TimestampMixin):
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    public_key: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="omnichannel_channels")

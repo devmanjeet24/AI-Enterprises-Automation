@@ -8,6 +8,7 @@ import {
   useOmnichannelAnalytics,
   useOmnichannelChannels,
 } from "@/hooks/use-omnichannel";
+import { useOmnichannelRealtime } from "@/hooks/use-omnichannel-realtime";
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
@@ -43,6 +44,7 @@ export function OmnichannelPage() {
 
   const permissions = useUserPermissions();
   const canCreateChannel = hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CHANNELS_WRITE);
+  useOmnichannelRealtime();
 
   const {
     data: channels = [],

@@ -1,9 +1,11 @@
 """Omnichannel conversation, message, and inbox endpoints."""
 
 import uuid
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -43,9 +45,18 @@ from app.services.omnichannel_conversation_service import (
     update_omnichannel_conversation,
 )
 from app.services.omnichannel_inbox_service import list_unified_inbox
+from app.services.omnichannel_audit_service import list_conversation_audit_logs
 from app.services.retrieval_service import get_cached_embedding_service
 
 router = APIRouter(prefix="/omnichannel-conversations", tags=["omnichannel-conversations"])
+
+
+class OmnichannelAuditLogResponse(BaseModel):
+    id: uuid.UUID
+    action: str
+    actor_user_id: uuid.UUID | None
+    details: dict[str, Any] | None
+    created_at: datetime
 
 
 def get_embedding_service(
@@ -251,4 +262,37 @@ def request_human_handoff_endpoint(
         conversation_id=conversation_id,
         organization_id=current_user.organization_id,
     )
-    return request_human_handoff(db, conversation=conversation)
+    return request_human_handoff(
+        db,
+        conversation=conversation,
+        actor_user_id=current_user.id,
+    )
+
+
+@router.get("/{conversation_id}/audit-logs", response_model=list[OmnichannelAuditLogResponse])
+def list_conversation_audit_logs_endpoint(
+    conversation_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_permission(OMNICHANNEL_CONVERSATIONS_READ))],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[OmnichannelAuditLogResponse]:
+    """List audit log entries for an omnichannel conversation."""
+    get_omnichannel_conversation_or_404(
+        db,
+        conversation_id=conversation_id,
+        organization_id=current_user.organization_id,
+    )
+    logs = list_conversation_audit_logs(
+        db,
+        organization_id=current_user.organization_id,
+        conversation_id=conversation_id,
+    )
+    return [
+        OmnichannelAuditLogResponse(
+            id=log.id,
+            action=log.action.value,
+            actor_user_id=log.actor_user_id,
+            details=log.details,
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]

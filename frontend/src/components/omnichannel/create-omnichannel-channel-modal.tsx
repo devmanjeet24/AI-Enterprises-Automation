@@ -15,8 +15,10 @@ import { useToast } from "@/providers/toast-provider";
 
 const channelTypes: { value: OmnichannelChannelType; label: string }[] = [
   { value: "website_chat", label: "Website Chat" },
-  { value: "telegram", label: "Telegram (simulated)" },
-  { value: "slack", label: "Slack (simulated)" },
+  { value: "telegram", label: "Telegram" },
+  { value: "slack", label: "Slack" },
+  { value: "email", label: "Email" },
+  { value: "whatsapp", label: "WhatsApp" },
   { value: "internal", label: "Internal Messaging" },
 ];
 
@@ -35,12 +37,30 @@ export function CreateOmnichannelChannelModal({
   const [description, setDescription] = useState("");
   const [channelType, setChannelType] = useState<OmnichannelChannelType>("website_chat");
   const [aiEmployeeId, setAiEmployeeId] = useState("");
+  const [botToken, setBotToken] = useState("");
+  const [slackWebhook, setSlackWebhook] = useState("");
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [fromAddress, setFromAddress] = useState("");
+  const [whatsappToken, setWhatsappToken] = useState("");
+  const [whatsappPhoneId, setWhatsappPhoneId] = useState("");
+  const [whatsappVerifyToken, setWhatsappVerifyToken] = useState("");
 
   const resetForm = useCallback(() => {
     setName("");
     setDescription("");
     setChannelType("website_chat");
     setAiEmployeeId("");
+    setBotToken("");
+    setSlackWebhook("");
+    setSmtpHost("");
+    setSmtpUser("");
+    setSmtpPassword("");
+    setFromAddress("");
+    setWhatsappToken("");
+    setWhatsappPhoneId("");
+    setWhatsappVerifyToken("");
   }, []);
 
   useEffect(() => {
@@ -58,8 +78,31 @@ export function CreateOmnichannelChannelModal({
 
   if (!open) return null;
 
+  const buildConfig = () => {
+    if (channelType === "telegram" && botToken) return { bot_token: botToken };
+    if (channelType === "slack" && slackWebhook) return { incoming_webhook_url: slackWebhook };
+    if (channelType === "email") {
+      return {
+        provider: "smtp",
+        smtp_host: smtpHost || undefined,
+        smtp_user: smtpUser || undefined,
+        smtp_password: smtpPassword || undefined,
+        from_address: fromAddress || undefined,
+      };
+    }
+    if (channelType === "whatsapp") {
+      return {
+        access_token: whatsappToken || undefined,
+        phone_number_id: whatsappPhoneId || undefined,
+        verify_token: whatsappVerifyToken || undefined,
+      };
+    }
+    return undefined;
+  };
+
   const handleCreate = async () => {
     if (!name.trim()) return;
+    const config = buildConfig();
     await runMutationWithFeedback({
       action: () =>
         createMutation.mutateAsync({
@@ -68,6 +111,7 @@ export function CreateOmnichannelChannelModal({
           description: description.trim() || undefined,
           channel_type: channelType,
           ai_employee_id: aiEmployeeId || undefined,
+          config,
         }),
       toast,
       successMessage: "Channel created successfully.",
@@ -125,6 +169,54 @@ export function CreateOmnichannelChannelModal({
               ))}
             </select>
           </div>
+          {channelType === "telegram" && (
+            <div>
+              <Label htmlFor="telegram-token">Bot token</Label>
+              <Input id="telegram-token" value={botToken} onChange={(e) => setBotToken(e.target.value)} className="mt-1.5" placeholder="123456:ABC-DEF..." />
+            </div>
+          )}
+          {channelType === "slack" && (
+            <div>
+              <Label htmlFor="slack-webhook">Incoming webhook URL</Label>
+              <Input id="slack-webhook" value={slackWebhook} onChange={(e) => setSlackWebhook(e.target.value)} className="mt-1.5" />
+            </div>
+          )}
+          {channelType === "email" && (
+            <>
+              <div>
+                <Label htmlFor="smtp-host">SMTP host</Label>
+                <Input id="smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="mt-1.5" placeholder="smtp.gmail.com" />
+              </div>
+              <div>
+                <Label htmlFor="smtp-user">SMTP user</Label>
+                <Input id="smtp-user" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="smtp-password">SMTP password</Label>
+                <Input id="smtp-password" type="password" value={smtpPassword} onChange={(e) => setSmtpPassword(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="from-address">From address</Label>
+                <Input id="from-address" value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} className="mt-1.5" />
+              </div>
+            </>
+          )}
+          {channelType === "whatsapp" && (
+            <>
+              <div>
+                <Label htmlFor="wa-token">Access token</Label>
+                <Input id="wa-token" value={whatsappToken} onChange={(e) => setWhatsappToken(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="wa-phone-id">Phone number ID</Label>
+                <Input id="wa-phone-id" value={whatsappPhoneId} onChange={(e) => setWhatsappPhoneId(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="wa-verify">Webhook verify token</Label>
+                <Input id="wa-verify" value={whatsappVerifyToken} onChange={(e) => setWhatsappVerifyToken(e.target.value)} className="mt-1.5" />
+              </div>
+            </>
+          )}
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>

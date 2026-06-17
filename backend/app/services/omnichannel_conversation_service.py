@@ -13,6 +13,7 @@ from app.core.text import slugify
 from app.models.ai_employee import AIEmployee
 from app.models.enums import (
     AIEmployeeStatus,
+    OmnichannelAuditAction,
     OmnichannelConversationStatus,
     OmnichannelHandoffStatus,
     OmnichannelMessageRole,
@@ -34,7 +35,51 @@ from app.services.chroma_service import ChromaService
 from app.services.employee_rag_service import EmployeeRAGService, citations_to_json
 from app.services.embedding_service import EmbeddingService
 from app.services.omnichannel_channel_service import get_omnichannel_channel_or_404
+from app.services.omnichannel_audit_service import record_omnichannel_audit
+from app.services.omnichannel_connector_service import deliver_outbound_message
+from app.services.omnichannel_escalation_service import escalate_conversation_to_ticket
+from app.services.omnichannel_event_bus import publish_omnichannel_event_sync
 from app.services.rag_service import RAGService
+
+
+_RESOLUTION_ROLES = {
+    OmnichannelMessageRole.AGENT,
+    OmnichannelMessageRole.AI_ASSISTANT,
+}
+_TERMINAL_STATUSES = {
+    OmnichannelConversationStatus.RESOLVED,
+    OmnichannelConversationStatus.CLOSED,
+}
+
+
+async def _publish_event(
+    organization_id: uuid.UUID,
+    event: str,
+    data: dict[str, Any],
+) -> None:
+    publish_omnichannel_event_sync(organization_id, event, data)
+
+
+def _conversation_has_resolution(db: Session, *, conversation_id: uuid.UUID) -> bool:
+    message = db.scalar(
+        select(OmnichannelMessage)
+        .where(
+            OmnichannelMessage.conversation_id == conversation_id,
+            OmnichannelMessage.is_internal.is_(False),
+            OmnichannelMessage.role.in_(_RESOLUTION_ROLES),
+        )
+        .order_by(OmnichannelMessage.created_at.desc())
+        .limit(1)
+    )
+    return message is not None
+
+
+def _ensure_conversation_can_be_resolved(db: Session, *, conversation: OmnichannelConversation) -> None:
+    if not _conversation_has_resolution(db, conversation_id=conversation.id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Send a public agent or AI reply before resolving this conversation",
+        )
 
 
 def _resolve_slug(subject: str, slug: str | None) -> str:
@@ -193,8 +238,22 @@ def create_omnichannel_conversation(
         db.add(message)
         conversation.last_message_at = datetime.now(UTC)
 
+    record_omnichannel_audit(
+        db,
+        organization_id=organization_id,
+        conversation_id=conversation.id,
+        channel_id=payload.channel_id,
+        actor_user_id=created_by_id,
+        action=OmnichannelAuditAction.CONVERSATION_CREATED,
+    )
+
     db.commit()
     db.refresh(conversation)
+    publish_omnichannel_event_sync(
+        organization_id,
+        "conversation_created",
+        {"conversation_id": str(conversation.id)},
+    )
     return conversation
 
 
@@ -206,6 +265,12 @@ def update_omnichannel_conversation(
     payload: OmnichannelConversationUpdateRequest,
 ) -> OmnichannelConversation:
     updates = payload.model_dump(exclude_unset=True)
+
+    if updates.get("status") in _TERMINAL_STATUSES:
+        _ensure_conversation_can_be_resolved(db, conversation=conversation)
+
+    previous_status = conversation.status
+    previous_assigned_user = conversation.assigned_user_id
 
     if "assigned_ai_employee_id" in updates and updates["assigned_ai_employee_id"] is not None:
         employee = get_employee_or_404(
@@ -249,6 +314,40 @@ def update_omnichannel_conversation(
             if conversation.status == OmnichannelConversationStatus.WAITING_HUMAN:
                 conversation.status = OmnichannelConversationStatus.OPEN
 
+    if "status" in updates:
+        new_status = updates["status"]
+        if new_status == OmnichannelConversationStatus.RESOLVED:
+            conversation.resolved_at = datetime.now(UTC)
+        elif new_status in {OmnichannelConversationStatus.OPEN, OmnichannelConversationStatus.AI_HANDLING}:
+            if previous_status in _TERMINAL_STATUSES:
+                conversation.reopened_at = datetime.now(UTC)
+                conversation.resolved_at = None
+
+    if "assigned_user_id" in updates and updates["assigned_user_id"] != previous_assigned_user:
+        if updates["assigned_user_id"] is not None:
+            conversation.handoff_status = OmnichannelHandoffStatus.ASSIGNED
+            record_omnichannel_audit(
+                db,
+                organization_id=organization_id,
+                conversation_id=conversation.id,
+                channel_id=conversation.channel_id,
+                action=OmnichannelAuditAction.AGENT_ASSIGNED,
+                details={"assigned_user_id": str(updates["assigned_user_id"])},
+            )
+
+    if "status" in updates and updates["status"] != previous_status:
+        record_omnichannel_audit(
+            db,
+            organization_id=organization_id,
+            conversation_id=conversation.id,
+            channel_id=conversation.channel_id,
+            action=OmnichannelAuditAction.STATUS_CHANGED,
+            details={
+                "from": previous_status.value,
+                "to": updates["status"].value,
+            },
+        )
+
     if "slug" in updates or "subject" in updates:
         slug = _resolve_slug(
             updates.get("subject", conversation.subject),
@@ -264,6 +363,11 @@ def update_omnichannel_conversation(
 
     db.commit()
     db.refresh(conversation)
+    publish_omnichannel_event_sync(
+        organization_id,
+        "conversation_updated",
+        {"conversation_id": str(conversation.id)},
+    )
     return conversation
 
 
@@ -331,8 +435,38 @@ def create_conversation_message(
     conversation.last_message_at = datetime.now(UTC)
     if payload.role == OmnichannelMessageRole.CUSTOMER:
         conversation.status = OmnichannelConversationStatus.OPEN
+    elif payload.role in _RESOLUTION_ROLES and not payload.is_internal:
+        if conversation.handoff_status == OmnichannelHandoffStatus.NONE:
+            conversation.status = OmnichannelConversationStatus.AI_HANDLING
+
+    channel = db.get(OmnichannelChannel, conversation.channel_id)
+
+    record_omnichannel_audit(
+        db,
+        organization_id=conversation.organization_id,
+        conversation_id=conversation.id,
+        channel_id=conversation.channel_id,
+        actor_user_id=author_user_id,
+        action=OmnichannelAuditAction.MESSAGE_SENT,
+        details={"role": payload.role.value, "is_internal": payload.is_internal},
+    )
+
     db.commit()
     db.refresh(message)
+
+    if channel is not None and payload.role in _RESOLUTION_ROLES and not payload.is_internal:
+        deliver_outbound_message(channel=channel, conversation=conversation, message=message)
+
+    publish_omnichannel_event_sync(
+        conversation.organization_id,
+        "message_created",
+        {
+            "conversation_id": str(conversation.id),
+            "message_id": str(message.id),
+            "message": "New omnichannel message received",
+        },
+    )
+
     return _build_message_response(db, message=message)
 
 
@@ -422,11 +556,36 @@ def request_human_handoff(
     db: Session,
     *,
     conversation: OmnichannelConversation,
+    actor_user_id: uuid.UUID | None = None,
+    create_ticket: bool = True,
 ) -> OmnichannelConversation:
     conversation.handoff_status = OmnichannelHandoffStatus.REQUESTED
     conversation.status = OmnichannelConversationStatus.WAITING_HUMAN
-    db.commit()
+    record_omnichannel_audit(
+        db,
+        organization_id=conversation.organization_id,
+        conversation_id=conversation.id,
+        channel_id=conversation.channel_id,
+        actor_user_id=actor_user_id,
+        action=OmnichannelAuditAction.HANDOFF_REQUESTED,
+    )
+    if create_ticket and actor_user_id is not None:
+        escalate_conversation_to_ticket(
+            db,
+            conversation=conversation,
+            created_by_id=actor_user_id,
+        )
+    else:
+        db.commit()
     db.refresh(conversation)
+    publish_omnichannel_event_sync(
+        conversation.organization_id,
+        "handoff_requested",
+        {
+            "conversation_id": str(conversation.id),
+            "message": "Human handoff requested",
+        },
+    )
     return conversation
 
 
@@ -479,6 +638,7 @@ def build_conversation_detail_response(
         ),
         assigned_ai_employee_name=assigned_employee.name if assigned_employee else None,
         message_count=len(loaded.messages),
+        has_resolution=_conversation_has_resolution(db, conversation_id=loaded.id),
         messages=[
             _build_message_response(db, message=message) for message in loaded.messages
         ],

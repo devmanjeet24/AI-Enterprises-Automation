@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { channelTypeLabels, formatDateTime } from "@/config/omnichannel";
+import { siteConfig } from "@/config/site";
 import {
   useCreateOmnichannelConversation,
   useInbox,
@@ -143,8 +144,26 @@ export function OmnichannelChannelDetailPage({ channelId }: { channelId: string 
             </div>
           </dl>
           <p className="mt-4 text-[12px] text-muted-foreground">
-            Simulated connector — no external Telegram or Slack APIs.
+            Configure connector credentials in channel settings. Webhook URLs are generated per channel.
           </p>
+          {channel.channel_type === "website_chat" && channel.public_key && (
+            <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[12px] font-medium text-foreground">Website embed code</p>
+              <pre className="mt-2 overflow-x-auto text-[11px] text-muted-foreground">
+{`<script
+  src="${siteConfig.url}/widget/omnichannel-chat.js"
+  data-channel-key="${channel.public_key}"
+  data-api-url="${siteConfig.apiUrl}"
+  async
+></script>`}
+              </pre>
+            </div>
+          )}
+          {(channel.channel_type === "telegram" || channel.channel_type === "slack" || channel.channel_type === "whatsapp") && (
+            <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-muted-foreground">
+              Webhook: {siteConfig.apiUrl}/api/v1/omnichannel-webhooks/{channel.channel_type}/{channel.id}
+            </div>
+          )}
         </DashboardCard>
 
         <div className="md:col-span-2">

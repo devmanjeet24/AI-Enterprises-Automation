@@ -4,6 +4,8 @@ export const channelTypeLabels: Record<string, string> = {
   website_chat: "Website Chat",
   telegram: "Telegram",
   slack: "Slack",
+  email: "Email",
+  whatsapp: "WhatsApp",
   internal: "Internal",
 };
 
