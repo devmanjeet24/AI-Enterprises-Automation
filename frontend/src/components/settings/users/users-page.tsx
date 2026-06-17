@@ -33,6 +33,7 @@ export function UsersPage() {
   const permissions = useUserPermissions();
   const accent = dashboardAccents.emerald;
   const canWrite = hasPermission(permissions, PERMISSIONS.USERS_WRITE);
+  const canAssignRole = hasPermission(permissions, PERMISSIONS.USERS_ASSIGN_ROLE);
 
   const {
     data: usersData,
@@ -85,7 +86,7 @@ export function UsersPage() {
 
   return (
     <div className="pb-10 md:pb-12">
-      <UsersHero users={users} actions={<UserManagementActions canWrite={canWrite} />} />
+      <UsersHero users={users} actions={<UserManagementActions canWrite={canWrite} canAssignRole={canAssignRole} />} />
 
       <div className="mt-10 space-y-10 md:mt-12 md:space-y-12">
         <section className="px-6 md:px-8">

@@ -90,7 +90,7 @@ def test_get_organization_me(client: TestClient) -> None:
     assert "slug" in body
 
 
-def test_patch_organization_me_requires_admin(client: TestClient) -> None:
+def test_patch_organization_me_requires_write_permission(client: TestClient) -> None:
     unique = uuid.uuid4().hex[:8]
     org_slug = f"member-org-{unique}"
 
@@ -117,6 +117,7 @@ def test_patch_organization_me_requires_admin(client: TestClient) -> None:
         headers=member_headers,
     )
     assert forbidden.status_code == 403
+    assert "organizations:write" in forbidden.text
 
     allowed = client.patch(
         "/api/v1/organizations/me",

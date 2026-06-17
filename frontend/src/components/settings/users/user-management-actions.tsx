@@ -24,6 +24,7 @@ type ActiveDialog = "create" | "invite" | null;
 
 interface UserManagementActionsProps {
   canWrite: boolean;
+  canAssignRole?: boolean;
 }
 
 interface PendingInvitationsProps {
@@ -72,12 +73,23 @@ function RoleSelect({
   roles,
   value,
   onChange,
+  canAssignRole,
 }: {
   roles: Role[];
   value: string;
   onChange: (value: string) => void;
+  canAssignRole: boolean;
 }) {
   const activeRoles = roles.filter((role) => role.is_active);
+
+  if (!canAssignRole) {
+    return (
+      <div className="space-y-1.5">
+        <Label className="text-[13px] text-muted-foreground">Initial role</Label>
+        <p className="text-[13px] text-muted-foreground">Member (default)</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-1.5">
@@ -137,7 +149,10 @@ function DialogShell({
   );
 }
 
-export function UserManagementActions({ canWrite }: UserManagementActionsProps) {
+export function UserManagementActions({
+  canWrite,
+  canAssignRole = false,
+}: UserManagementActionsProps) {
   const [activeDialog, setActiveDialog] = useState<ActiveDialog>(null);
 
   if (!canWrite) return null;
@@ -156,16 +171,22 @@ export function UserManagementActions({ canWrite }: UserManagementActionsProps) 
       </div>
 
       {activeDialog === "create" && (
-        <CreateUserDialog onClose={() => setActiveDialog(null)} />
+        <CreateUserDialog onClose={() => setActiveDialog(null)} canAssignRole={canAssignRole} />
       )}
       {activeDialog === "invite" && (
-        <InviteUserDialog onClose={() => setActiveDialog(null)} />
+        <InviteUserDialog onClose={() => setActiveDialog(null)} canAssignRole={canAssignRole} />
       )}
     </>
   );
 }
 
-function CreateUserDialog({ onClose }: { onClose: () => void }) {
+function CreateUserDialog({
+  onClose,
+  canAssignRole,
+}: {
+  onClose: () => void;
+  canAssignRole: boolean;
+}) {
   const toast = useToast();
   const createMutation = useCreateUser();
   const { data: roles = [] } = useRoles();
@@ -252,6 +273,7 @@ function CreateUserDialog({ onClose }: { onClose: () => void }) {
           roles={roles}
           value={values.role_id}
           onChange={(value) => update("role_id", value)}
+          canAssignRole={canAssignRole}
         />
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -267,7 +289,13 @@ function CreateUserDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function InviteUserDialog({ onClose }: { onClose: () => void }) {
+function InviteUserDialog({
+  onClose,
+  canAssignRole,
+}: {
+  onClose: () => void;
+  canAssignRole: boolean;
+}) {
   const toast = useToast();
   const inviteMutation = useInviteUser();
   const { data: roles = [] } = useRoles();
@@ -339,6 +367,7 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
           roles={roles}
           value={values.role_id}
           onChange={(value) => update("role_id", value)}
+          canAssignRole={canAssignRole}
         />
         {inviteUrl && (
           <div className="rounded-xl border border-border bg-white/[0.03] p-3">

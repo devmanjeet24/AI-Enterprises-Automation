@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import get_settings
-from app.core.authorization import require_permission
+from app.core.authorization import get_user_permission_slugs, require_permission
 from app.core.permissions import USERS_ASSIGN_ROLE, USERS_READ, USERS_WRITE
 from app.core.security import create_access_token, hash_password
 from app.db.session import get_db
@@ -264,6 +264,24 @@ def _ensure_not_last_admin(
         )
 
 
+def _ensure_can_assign_role_on_create(
+    db: Session,
+    *,
+    current_user: User,
+    role_id: uuid.UUID | None,
+) -> None:
+    """Creating or inviting with an explicit role requires users:assign-role."""
+    if role_id is None:
+        return
+
+    permission_slugs = get_user_permission_slugs(db, current_user)
+    if USERS_ASSIGN_ROLE not in permission_slugs:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Permission '{USERS_ASSIGN_ROLE}' required to assign a role",
+        )
+
+
 @router.get("", response_model=list[UserResponse])
 def list_users(
     current_user: Annotated[User, Depends(require_permission(USERS_READ))],
@@ -295,6 +313,11 @@ def create_user(
             detail="A user with this email already exists",
         )
 
+    _ensure_can_assign_role_on_create(
+        db,
+        current_user=current_user,
+        role_id=payload.role_id,
+    )
     role = _resolve_create_role(
         db,
         organization_id=current_user.organization_id,
@@ -362,6 +385,11 @@ def invite_user(
             detail="An active invitation already exists for this email. Resend it instead.",
         )
 
+    _ensure_can_assign_role_on_create(
+        db,
+        current_user=current_user,
+        role_id=payload.role_id,
+    )
     role = _resolve_create_role(
         db,
         organization_id=current_user.organization_id,

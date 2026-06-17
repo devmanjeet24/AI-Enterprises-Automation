@@ -12,6 +12,9 @@ from app.models.role_permission import RolePermission
 
 # --- Permission slugs (resource:action) ---
 
+ORGANIZATIONS_READ = "organizations:read"
+ORGANIZATIONS_WRITE = "organizations:write"
+
 DEPARTMENTS_READ = "departments:read"
 DEPARTMENTS_WRITE = "departments:write"
 DEPARTMENTS_DELETE = "departments:delete"
@@ -98,6 +101,8 @@ OMNICHANNEL_CONVERSATIONS_EXECUTE = "omnichannel_conversations:execute"
 SYSTEM_ROLE_SLUGS: frozenset[str] = frozenset({"admin", "manager", "member"})
 
 ALL_PERMISSION_SLUGS: tuple[str, ...] = (
+    ORGANIZATIONS_READ,
+    ORGANIZATIONS_WRITE,
     DEPARTMENTS_READ,
     DEPARTMENTS_WRITE,
     DEPARTMENTS_DELETE,
@@ -172,6 +177,16 @@ class PermissionDefinition:
 
 
 DEFAULT_PERMISSIONS: tuple[PermissionDefinition, ...] = (
+    PermissionDefinition(
+        "Read Organization",
+        ORGANIZATIONS_READ,
+        "View organization profile and dashboard overview",
+    ),
+    PermissionDefinition(
+        "Write Organization",
+        ORGANIZATIONS_WRITE,
+        "Update organization profile and settings",
+    ),
     PermissionDefinition("Read Departments", DEPARTMENTS_READ, "View department records"),
     PermissionDefinition("Write Departments", DEPARTMENTS_WRITE, "Create and update departments"),
     PermissionDefinition("Delete Departments", DEPARTMENTS_DELETE, "Delete departments"),
@@ -405,6 +420,7 @@ DEFAULT_PERMISSIONS: tuple[PermissionDefinition, ...] = (
 ROLE_PERMISSION_SLUGS: dict[str, tuple[str, ...]] = {
     "admin": ALL_PERMISSION_SLUGS,
     "manager": (
+        ORGANIZATIONS_READ,
         DEPARTMENTS_READ,
         DEPARTMENTS_WRITE,
         DEPARTMENTS_DELETE,
@@ -450,6 +466,7 @@ ROLE_PERMISSION_SLUGS: dict[str, tuple[str, ...]] = {
         OMNICHANNEL_CONVERSATIONS_EXECUTE,
     ),
     "member": (
+        ORGANIZATIONS_READ,
         DEPARTMENTS_READ,
         TEAMS_READ,
         DOCUMENTS_READ,

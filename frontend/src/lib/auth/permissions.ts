@@ -1,4 +1,6 @@
 export const PERMISSIONS = {
+  ORGANIZATIONS_READ: "organizations:read",
+  ORGANIZATIONS_WRITE: "organizations:write",
   DEPARTMENTS_READ: "departments:read",
   DEPARTMENTS_WRITE: "departments:write",
   DEPARTMENTS_DELETE: "departments:delete",
