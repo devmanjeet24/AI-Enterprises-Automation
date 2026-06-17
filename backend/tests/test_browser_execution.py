@@ -60,6 +60,7 @@ def test_run_browser_task_stores_execution_logs_and_results(
     assert len(execution["logs"]) >= 3
     assert execution["started_at"] is not None
     assert execution["completed_at"] is not None
+    assert len(execution["execution_metadata"]["step_timeline"]) >= 1
 
     history = client.get(
         f"/api/v1/browser-tasks/{task['id']}/executions",
@@ -120,8 +121,8 @@ def test_run_browser_task_with_step_sequence(
     assert execution["result"]["steps_completed"] == 5
     assert execution["result"]["extracted"]["text_input"] == "Hello Browser"
     assert execution["result"]["extracted"]["checkbox_checked"] is True
-    assert any("Step 3/5: fill" in entry["message"] for entry in execution["logs"])
-    assert any("Step 4/5: click" in entry["message"] for entry in execution["logs"])
+    assert any("Step 3/5: Fill" in entry["message"] for entry in execution["logs"])
+    assert any("Step 4/5: Click" in entry["message"] for entry in execution["logs"])
 
 
 def test_step_failure_records_failed_step(
@@ -149,7 +150,9 @@ def test_step_failure_records_failed_step(
         f"/api/v1/browser-tasks/{task['id']}/run",
         headers=auth_headers,
     )
-    assert run.status_code == 500
+    assert run.status_code == 201, run.text
+    run_body = run.json()
+    assert run_body["status"] == "failed"
     executions = client.get(
         f"/api/v1/browser-tasks/{task['id']}/executions",
         headers=auth_headers,
@@ -163,6 +166,16 @@ def test_step_failure_records_failed_step(
     assert execution["execution_metadata"]["failed_step"]["index"] == 1
     assert execution["execution_metadata"]["failed_step"]["action"] == "click"
     assert execution["result"]["steps_completed"] == 1
+    assert execution["execution_metadata"]["has_failure_screenshot"] is True
+    assert len(execution["execution_metadata"]["step_timeline"]) == 2
+    assert execution["execution_metadata"]["step_timeline"][1]["status"] == "failed"
+
+    screenshot = client.get(
+        f"/api/v1/browser-tasks/executions/{execution['id']}/screenshot",
+        headers=auth_headers,
+    )
+    assert screenshot.status_code == 200
+    assert screenshot.headers["content-type"].startswith("image/png")
 
 
 def test_browser_analytics_and_org_execution_history(

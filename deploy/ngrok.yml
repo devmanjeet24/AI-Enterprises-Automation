@@ -1,0 +1,8 @@
+version: "3"
+tunnels:
+  ai-frontend:
+    addr: 20380
+    proto: http
+  ai-backend:
+    addr: 20378
+    proto: http

@@ -89,3 +89,14 @@ export function uploadVoiceSessionAudio(
     { token },
   );
 }
+
+export function getVoiceSessionAudioPath(sessionId: string): string {
+  return `${VOICE_SESSIONS_BASE}/${sessionId}/audio`;
+}
+
+export function getVoiceTranscriptAudioPath(
+  sessionId: string,
+  transcriptId: string,
+): string {
+  return `${VOICE_SESSIONS_BASE}/${sessionId}/transcripts/${transcriptId}/audio`;
+}

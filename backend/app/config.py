@@ -44,7 +44,10 @@ class Settings(BaseSettings):
     groq_temperature: float = 0.2
     groq_max_tokens: int = 512
 
+    whisper_model_name: str = "base"
+
     browser_session_dir: str = "browser_sessions"
+    browser_screenshot_dir: str = "browser_screenshots"
 
     @field_validator("database_url", mode="after")
     @classmethod

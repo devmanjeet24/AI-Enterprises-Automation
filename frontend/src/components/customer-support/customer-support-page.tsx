@@ -220,7 +220,9 @@ export function CustomerSupportPage() {
         </section>
       </div>
 
-      <CreateTicketModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      {canCreate && (
+        <CreateTicketModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      )}
       <ManageCategoriesPanel
         open={categoriesOpen}
         onClose={() => setCategoriesOpen(false)}

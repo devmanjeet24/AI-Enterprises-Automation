@@ -78,8 +78,17 @@ export function OmnichannelPage() {
   } = useInbox(inboxParams);
 
   const channelsAccessDenied = channelsError && isAccessDeniedError(channelsErr);
+  const inboxAccessDenied = inboxError && isAccessDeniedError(inboxErr);
+  const canReadChannels = hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CHANNELS_READ);
+  const canReadInbox = hasPermission(
+    permissions,
+    PERMISSIONS.OMNICHANNEL_CONVERSATIONS_READ,
+  );
+  const fullAccessDenied =
+    (!canReadChannels && !canReadInbox) ||
+    (channelsAccessDenied && inboxAccessDenied);
 
-  if (channelsAccessDenied) {
+  if (fullAccessDenied) {
     return (
       <div className="px-6 py-10 md:px-8">
         <OmnichannelAccessDenied />
@@ -125,6 +134,8 @@ export function OmnichannelPage() {
           <DashboardSectionHeader title="Channels" description="Manage communication channels" />
           {loadingChannels ? (
             <OmnichannelChannelGridSkeleton />
+          ) : channelsAccessDenied ? (
+            <OmnichannelAccessDenied />
           ) : channelsError ? (
             <OmnichannelError
               title="Failed to load channels"
@@ -196,6 +207,8 @@ export function OmnichannelPage() {
 
           {loadingInbox ? (
             <OmnichannelInboxSkeleton />
+          ) : inboxAccessDenied ? (
+            <OmnichannelAccessDenied />
           ) : inboxError ? (
             <OmnichannelError
               title="Failed to load inbox"
@@ -208,7 +221,9 @@ export function OmnichannelPage() {
         </section>
       </div>
 
-      <CreateOmnichannelChannelModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      {canCreateChannel && (
+        <CreateOmnichannelChannelModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      )}
     </div>
   );
 }

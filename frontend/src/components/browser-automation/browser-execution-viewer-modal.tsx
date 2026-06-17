@@ -11,7 +11,11 @@ import type { BrowserTaskExecutionSummary } from "@/lib/browser-automation/types
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
+import { BrowserExecutionErrorPanel } from "./browser-execution-error-panel";
+import { BrowserExecutionScreenshot } from "./browser-execution-screenshot";
 import { BrowserExecutionStatusBadge } from "./browser-execution-status-badge";
+import { BrowserExecutionSummary } from "./browser-execution-summary";
+import { BrowserExecutionTimeline } from "./browser-execution-timeline";
 
 interface BrowserExecutionViewerModalProps {
   executionSummary: BrowserTaskExecutionSummary | null;
@@ -52,6 +56,10 @@ export function BrowserExecutionViewerModal({
     executionSummary.started_at,
     executionSummary.completed_at,
   );
+
+  const displayExecution = execution ?? null;
+  const isInProgress =
+    executionSummary.status === "pending" || executionSummary.status === "running";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -143,9 +151,9 @@ export function BrowserExecutionViewerModal({
             </div>
           )}
 
-          {execution && (
+          {displayExecution && (
             <div className="space-y-6">
-              {(execution.status === "pending" || execution.status === "running") && (
+              {isInProgress && (
                 <div className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3">
                   <Loader2 className="size-4 animate-spin text-brand" />
                   <p className="text-[13px] text-muted-foreground">
@@ -154,48 +162,33 @@ export function BrowserExecutionViewerModal({
                 </div>
               )}
 
-              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-5 py-4">
-                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-tertiary">
-                  Execution metadata
-                </p>
-                <dl className="mt-3 space-y-2 text-[13px]">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Started</dt>
-                    <dd className="font-medium text-foreground">
-                      {formatDateTime(execution.started_at)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Completed</dt>
-                    <dd className="font-medium text-foreground">
-                      {formatDateTime(execution.completed_at)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Duration</dt>
-                    <dd className="font-medium text-foreground">
-                      {formatDuration(execution.started_at, execution.completed_at) ?? "—"}
-                    </dd>
-                  </div>
-                </dl>
-                {execution.execution_metadata &&
-                  Object.keys(execution.execution_metadata).length > 0 && (
-                    <pre className="mt-4 overflow-x-auto rounded-lg border border-white/[0.06] bg-black/20 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
-                      {JSON.stringify(execution.execution_metadata, null, 2)}
-                    </pre>
-                  )}
-              </div>
+              {displayExecution.status === "failed" && (
+                <BrowserExecutionErrorPanel execution={displayExecution} />
+              )}
 
-              {execution.logs && execution.logs.length > 0 && (
-                <div>
-                  <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-tertiary">
-                    Logs
-                  </p>
+              <BrowserExecutionSummary execution={displayExecution} />
+
+              <BrowserExecutionTimeline execution={displayExecution} />
+
+              {displayExecution.status === "failed" && (
+                <BrowserExecutionScreenshot
+                  executionId={displayExecution.id}
+                  hasScreenshot={Boolean(
+                    displayExecution.execution_metadata?.has_failure_screenshot,
+                  )}
+                />
+              )}
+
+              {displayExecution.logs && displayExecution.logs.length > 0 && (
+                <details className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-5 py-4">
+                  <summary className="cursor-pointer text-[12px] font-medium uppercase tracking-[0.06em] text-tertiary">
+                    Raw logs ({displayExecution.logs.length})
+                  </summary>
                   <ul className="mt-3 space-y-2">
-                    {execution.logs.map((entry, index) => (
+                    {displayExecution.logs.map((entry, index) => (
                       <li
                         key={index}
-                        className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3"
+                        className="rounded-lg border border-white/[0.06] bg-black/10 px-3 py-2"
                       >
                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-tertiary">
                           {entry.timestamp && (
@@ -208,43 +201,23 @@ export function BrowserExecutionViewerModal({
                           )}
                         </div>
                         {entry.message && (
-                          <p className="mt-1 text-[13px] leading-relaxed text-foreground">
+                          <p className="mt-1 text-[12px] leading-relaxed text-foreground">
                             {entry.message}
                           </p>
                         )}
                       </li>
                     ))}
                   </ul>
-                </div>
+                </details>
               )}
 
-              {execution.result && Object.keys(execution.result).length > 0 && (
-                <div>
-                  <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-tertiary">
-                    Result JSON
-                  </p>
-                  <pre className="mt-3 overflow-x-auto rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4 font-mono text-[12px] leading-relaxed text-foreground">
-                    {JSON.stringify(execution.result, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {execution.error_message && (
-                <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-destructive">
-                    Error
-                  </p>
-                  <p className="mt-2 text-[13px] text-destructive">{execution.error_message}</p>
-                </div>
-              )}
-
-              {!execution.logs?.length &&
-                !execution.result &&
-                !execution.error_message &&
-                execution.status !== "pending" &&
-                execution.status !== "running" && (
+              {!displayExecution.logs?.length &&
+                displayExecution.status !== "pending" &&
+                displayExecution.status !== "running" &&
+                !displayExecution.result &&
+                !displayExecution.error_message && (
                   <p className="text-[13px] text-muted-foreground">
-                    No logs or results recorded for this execution.
+                    No additional details recorded for this execution.
                   </p>
                 )}
             </div>

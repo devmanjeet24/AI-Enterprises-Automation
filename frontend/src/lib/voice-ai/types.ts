@@ -2,6 +2,14 @@ export type VoiceSessionStatus = "pending" | "processing" | "completed" | "faile
 
 export type VoiceTranscriptRole = "caller" | "ai_assistant" | "system";
 
+export type VoiceInputPhase = "idle" | "recording" | "uploading" | "processing" | "failed";
+
+export interface KnowledgeSourceCitation {
+  document_title: string;
+  page_number: number | null;
+  similarity_score: number;
+}
+
 export interface VoiceAgent {
   id: string;
   organization_id: string;

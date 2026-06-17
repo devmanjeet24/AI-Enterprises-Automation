@@ -14,6 +14,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const pathname = usePathname();
   const isHydrated = useAppSelector((state) => state.app.isHydrated);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const user = useAppSelector((state) => state.auth.user);
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
@@ -22,7 +23,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isAuthenticated, isHydrated, pathname, router]);
 
-  if (!isHydrated || !isAuthenticated) {
+  if (!isHydrated || !isAuthenticated || !user) {
     return null;
   }
 

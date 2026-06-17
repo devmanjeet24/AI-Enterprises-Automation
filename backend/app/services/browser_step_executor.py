@@ -1,5 +1,6 @@
 """Execute ordered browser automation steps with Playwright."""
 
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -21,17 +22,43 @@ LogCallback = Callable[[str, str], None]
 
 
 @dataclass
+class StepTimelineEntry:
+    index: int
+    action: str
+    description: str
+    status: str
+    duration_ms: int
+    selector: str | None = None
+    error: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "index": self.index,
+            "action": self.action,
+            "description": self.description,
+            "status": self.status,
+            "duration_ms": self.duration_ms,
+        }
+        if self.selector is not None:
+            data["selector"] = self.selector
+        if self.error is not None:
+            data["error"] = self.error
+        return data
+
+
+@dataclass
 class StepExecutionError(Exception):
     step_index: int
     step_action: str
     message: str
     selector: str | None = None
+    step_timeline: list[StepTimelineEntry] = field(default_factory=list)
 
     def __str__(self) -> str:
-        location = f"step {self.step_index + 1} ({self.step_action})"
+        location = f"Step {self.step_index + 1} ({self.step_action})"
         if self.selector:
-            location = f"{location} selector '{self.selector}'"
-        return f"{location}: {self.message}"
+            location = f"{location} on '{self.selector}'"
+        return f"{location} failed: {self.message}"
 
 
 @dataclass
@@ -44,6 +71,7 @@ class StepExecutionOutcome:
     elements_found: int = 0
     steps_completed: int = 0
     step_count: int = 0
+    step_timeline: list[StepTimelineEntry] = field(default_factory=list)
 
 
 def _resolve_timeout(step_timeout_ms: int | None, default_timeout_ms: int) -> int:
@@ -101,16 +129,41 @@ def _extract_values(
     return extracted
 
 
+def _step_selector(step: BrowserStep) -> str | None:
+    if hasattr(step, "selector"):
+        return step.selector
+    return None
+
+
 def _describe_step(step: BrowserStep) -> str:
     if isinstance(step, BrowserStepGoto):
-        return f"goto {step.url or '{{target_url}}'}"
+        return f"Navigate to {step.url or '{{target_url}}'}"
     if isinstance(step, BrowserStepWaitForSelector):
-        return f"wait_for_selector {step.selector}"
+        return f"Wait for {step.selector}"
     if isinstance(step, BrowserStepClick):
-        return f"click {step.selector}"
+        return f"Click {step.selector}"
     if isinstance(step, BrowserStepFill):
-        return f"fill {step.selector}"
-    return f"extract ({len(step.selectors)} selector(s))"
+        return f"Fill {step.selector}"
+    return f"Extract {len(step.selectors)} field(s)"
+
+
+def _step_timeline_entry(
+    *,
+    index: int,
+    step: BrowserStep,
+    status: str,
+    duration_ms: int,
+    error: str | None = None,
+) -> StepTimelineEntry:
+    return StepTimelineEntry(
+        index=index,
+        action=step.action,
+        description=_describe_step(step),
+        status=status,
+        duration_ms=duration_ms,
+        selector=_step_selector(step),
+        error=error,
+    )
 
 
 def execute_browser_steps(
@@ -131,9 +184,12 @@ def execute_browser_steps(
         step_count=len(steps),
     )
 
+    step_timeline: list[StepTimelineEntry] = []
+
     for index, step in enumerate(steps):
         step_label = f"Step {index + 1}/{len(steps)}: {_describe_step(step)}"
         on_log("info", step_label)
+        step_started = time.monotonic()
 
         try:
             if isinstance(step, BrowserStepGoto):
@@ -186,35 +242,76 @@ def execute_browser_steps(
                     )
                 outcome.elements_found = page.locator("a").count()
 
+            duration_ms = int((time.monotonic() - step_started) * 1000)
+            step_timeline.append(
+                _step_timeline_entry(
+                    index=index,
+                    step=step,
+                    status="completed",
+                    duration_ms=duration_ms,
+                )
+            )
             outcome.steps_completed = index + 1
             outcome.final_url = page.url
             outcome.page_title = page.title()
 
         except ValueError as exc:
-            selector = step.selector if hasattr(step, "selector") else None
+            duration_ms = int((time.monotonic() - step_started) * 1000)
+            selector = _step_selector(step)
+            failed_entry = _step_timeline_entry(
+                index=index,
+                step=step,
+                status="failed",
+                duration_ms=duration_ms,
+                error=str(exc),
+            )
+            step_timeline.append(failed_entry)
             raise StepExecutionError(
                 step_index=index,
                 step_action=step.action,
                 message=str(exc),
                 selector=selector,
+                step_timeline=step_timeline,
             ) from exc
         except PlaywrightTimeoutError as exc:
-            selector = step.selector if hasattr(step, "selector") else None
+            duration_ms = int((time.monotonic() - step_started) * 1000)
+            selector = _step_selector(step)
+            error_message = f"Timed out waiting for element"
+            failed_entry = _step_timeline_entry(
+                index=index,
+                step=step,
+                status="failed",
+                duration_ms=duration_ms,
+                error=error_message,
+            )
+            step_timeline.append(failed_entry)
             raise StepExecutionError(
                 step_index=index,
                 step_action=step.action,
-                message=f"Timed out: {exc}",
+                message=error_message,
                 selector=selector,
+                step_timeline=step_timeline,
             ) from exc
         except Exception as exc:
-            selector = step.selector if hasattr(step, "selector") else None
+            duration_ms = int((time.monotonic() - step_started) * 1000)
+            selector = _step_selector(step)
+            failed_entry = _step_timeline_entry(
+                index=index,
+                step=step,
+                status="failed",
+                duration_ms=duration_ms,
+                error=str(exc),
+            )
+            step_timeline.append(failed_entry)
             raise StepExecutionError(
                 step_index=index,
                 step_action=step.action,
                 message=str(exc),
                 selector=selector,
+                step_timeline=step_timeline,
             ) from exc
 
+    outcome.step_timeline = step_timeline
     if not outcome.page_title:
         outcome.page_title = page.title()
     if not outcome.extracted_text and outcome.extracted:
@@ -222,4 +319,6 @@ def execute_browser_steps(
             str(value) for value in outcome.extracted.values() if value is not None
         )
 
+    if not outcome.step_timeline:
+        outcome.step_timeline = step_timeline
     return outcome

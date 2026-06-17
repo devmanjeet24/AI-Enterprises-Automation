@@ -11,6 +11,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from app.models.browser_profile import BrowserProfile
 from app.schemas.browser_step import BrowserStep, BrowserTaskStepConfig, parse_browser_task_config
+from app.services.browser_screenshot_store import get_execution_screenshot_path
 from app.services.browser_session_store import get_profile_session_path
 from app.services.browser_step_executor import (
     LogCallback,
@@ -36,6 +37,7 @@ class PlaywrightRunResult:
     step_count: int
     session_loaded: bool
     session_saved: bool
+    step_timeline: list[dict[str, Any]]
 
 
 def _profile_locale(profile: BrowserProfile) -> str | None:
@@ -93,7 +95,26 @@ def _outcome_to_result(
         step_count=outcome.step_count,
         session_loaded=session_loaded,
         session_saved=session_saved,
+        step_timeline=[entry.to_dict() for entry in outcome.step_timeline],
     )
+
+
+def _capture_failure_screenshot(
+    page,
+    *,
+    organization_id: uuid.UUID,
+    execution_id: uuid.UUID,
+) -> Path | None:
+    screenshot_path = get_execution_screenshot_path(
+        organization_id=organization_id,
+        execution_id=execution_id,
+    )
+    try:
+        screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(screenshot_path), full_page=False)
+        return screenshot_path
+    except PlaywrightError:
+        return None
 
 
 def _save_context_session(context: BrowserContext, session_path: Path) -> None:
@@ -105,6 +126,7 @@ def run_playwright_task(
     *,
     profile: BrowserProfile,
     organization_id: uuid.UUID,
+    execution_id: uuid.UUID,
     target_url: str,
     steps: list[BrowserStep],
     secrets: dict[str, str],
@@ -167,6 +189,15 @@ def run_playwright_task(
                 session_loaded=session_loaded,
                 session_saved=session_saved,
             )
+        except StepExecutionError as exc:
+            screenshot_path = _capture_failure_screenshot(
+                page,
+                organization_id=organization_id,
+                execution_id=execution_id,
+            )
+            if screenshot_path is not None:
+                on_log("info", "Captured failure screenshot")
+            raise exc
         finally:
             context.close()
             browser.close()

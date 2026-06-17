@@ -10,6 +10,8 @@ import {
   type DashboardNavItem,
 } from "@/config/dashboard";
 import { siteConfig } from "@/config/site";
+import { useUserPermissions } from "@/hooks/use-auth-token";
+import { canAccessSettings, filterNavByPermissions } from "@/lib/auth/nav-access";
 import { useAppDispatch } from "@/store/hooks";
 import { toggleSidebarCollapsed } from "@/store/slices/ui-slice";
 import { cn } from "@/lib/utils";
@@ -121,7 +123,11 @@ function SidebarNavItem({
 export function DashboardSidebar({ collapsed, onNavigate }: DashboardSidebarProps) {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const permissions = useUserPermissions();
   const isCollapsed = collapsed;
+
+  const visibleNavItems = filterNavByPermissions(dashboardNavItems, permissions);
+  const showSettings = canAccessSettings(permissions);
 
   return (
     <aside className="flex h-screen flex-col overflow-hidden">
@@ -185,7 +191,7 @@ export function DashboardSidebar({ collapsed, onNavigate }: DashboardSidebarProp
         )}
         aria-label="Dashboard"
       >
-        {dashboardNavItems.map((item) => (
+        {visibleNavItems.map((item) => (
           <SidebarNavItem
             key={item.href}
             item={item}
@@ -196,6 +202,7 @@ export function DashboardSidebar({ collapsed, onNavigate }: DashboardSidebarProp
         ))}
       </nav>
 
+      {showSettings && (
       <div
         className={cn(
           "shrink-0 border-t border-white/[0.06] py-3",
@@ -209,6 +216,7 @@ export function DashboardSidebar({ collapsed, onNavigate }: DashboardSidebarProp
           onNavigate={onNavigate}
         />
       </div>
+      )}
     </aside>
   );
 }

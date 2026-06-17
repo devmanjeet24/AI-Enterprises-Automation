@@ -15,6 +15,8 @@ import type { LucideIcon } from "lucide-react";
 
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { settingsNavSections } from "@/config/settings";
+import { useUserPermissions } from "@/hooks/use-auth-token";
+import { filterNavByPermissions } from "@/lib/auth/nav-access";
 import { dashboardAccents, type DashboardAccent } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
@@ -37,9 +39,20 @@ const sectionAccents: Record<(typeof settingsNavSections)[number]["id"], Dashboa
 };
 
 export function SettingsNavGrid() {
+  const permissions = useUserPermissions();
+  const visibleSections = filterNavByPermissions(settingsNavSections, permissions);
+
+  if (visibleSections.length === 0) {
+    return (
+      <p className="text-[13px] text-muted-foreground">
+        No administration sections are available for your role.
+      </p>
+    );
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {settingsNavSections.map((section) => {
+      {visibleSections.map((section) => {
         const Icon = sectionIcons[section.id];
         const accentKey = sectionAccents[section.id];
         const accent = dashboardAccents[accentKey];

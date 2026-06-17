@@ -79,7 +79,7 @@ export function VoiceAiPage() {
           <DashboardSectionHeader
             eyebrow="Overview"
             title="Voice metrics"
-            description="Track active agents, session volume, and transcription completion."
+            description="Track active assistants, conversation volume, and completion."
           />
           <VoiceAiStats
             agents={agents}
@@ -94,7 +94,7 @@ export function VoiceAiPage() {
         <section className="px-6 md:px-8">
           <DashboardSectionHeader
             eyebrow="Studio"
-            title="Voice agents"
+            title="Voice assistants"
             description={`${activeAgents.length} active of ${agents.length} total`}
           />
           {isLoadingAgents ? (
@@ -116,7 +116,9 @@ export function VoiceAiPage() {
         </section>
       </div>
 
-      <CreateVoiceAgentModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      {canCreate && (
+        <CreateVoiceAgentModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      )}
     </div>
   );
 }

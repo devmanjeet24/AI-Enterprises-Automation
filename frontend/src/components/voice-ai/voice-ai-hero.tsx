@@ -48,15 +48,15 @@ export function VoiceAiHero({
               <Mic className={cn("size-4", accent.text)} />
             </div>
             <span className={cn("text-[12px] font-medium uppercase tracking-wider", accent.textMuted)}>
-              Voice AI Platform
+              Voice Assistant
             </span>
           </div>
           <h1 className="mt-4 text-[28px] font-semibold tracking-[-0.02em] text-foreground md:text-[32px]">
-            Voice agents
+            Talk with your AI employees
           </h1>
           <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">
-            Upload audio, transcribe with Whisper, and get AI employee responses.
-            Demo-ready MVP without telephony integration.
+            Record voice messages in your browser, get instant transcription, and
+            continue multi-turn conversations grounded in your knowledge base.
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-[13px] text-muted-foreground">
             <span>
@@ -72,7 +72,7 @@ export function VoiceAiHero({
         {canCreate && onCreateClick && (
           <Button variant="brand" size="sm" onClick={onCreateClick}>
             <Plus className="size-3.5" />
-            Create agent
+            Create assistant
           </Button>
         )}
       </div>

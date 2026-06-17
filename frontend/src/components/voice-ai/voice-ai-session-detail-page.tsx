@@ -1,21 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Loader2, Upload } from "lucide-react";
-import { useRef } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
-import { ACCEPTED_AUDIO_TYPES, formatDateTime } from "@/config/voice-ai";
+import { formatDateTime } from "@/config/voice-ai";
 import {
+  useDeleteVoiceSession,
   useUploadVoiceSessionAudio,
   useVoiceSession,
 } from "@/hooks/use-voice-ai";
-import { useUserPermissions } from "@/hooks/use-auth-token";
+import { useRefreshCurrentUser } from "@/hooks/use-refresh-current-user";
+import { useAuthUser, useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { ApiError } from "@/lib/api/client";
-import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
+import { canDeleteVoiceSessions, canSendVoiceMessages } from "@/lib/auth/permissions";
 import { isAccessDeniedError } from "@/lib/voice-ai/access";
+import type { VoiceInputPhase } from "@/lib/voice-ai/types";
 import { useToast } from "@/providers/toast-provider";
 import { notFound } from "next/navigation";
 
@@ -23,18 +27,26 @@ import { VoiceSessionStatusBadge } from "./voice-ai-badges";
 import { VoiceAiAccessDenied } from "./voice-ai-access-denied";
 import { VoiceAiError } from "./voice-ai-error";
 import { VoiceAiSessionDetailSkeleton } from "./voice-ai-skeleton";
-import { VoiceSessionTranscript } from "./voice-session-transcript";
+import { VoiceSessionChat } from "./voice-session-chat";
+import { VoiceSessionComposer } from "./voice-session-composer";
 
 interface VoiceAiSessionDetailPageProps {
   sessionId: string;
 }
 
 export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPageProps) {
+  const router = useRouter();
   const toast = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [inputPhase, setInputPhase] = useState<VoiceInputPhase>("idle");
+  const [speakingTranscriptId, setSpeakingTranscriptId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  useRefreshCurrentUser();
+
+  const user = useAuthUser();
   const permissions = useUserPermissions();
-  const canExecute = hasPermission(permissions, PERMISSIONS.VOICE_SESSIONS_EXECUTE);
+  const canSendAudio = canSendVoiceMessages(permissions, user?.roles);
+  const canDelete = canDeleteVoiceSessions(permissions, user?.roles);
 
   const {
     data: session,
@@ -45,6 +57,7 @@ export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPage
   } = useVoiceSession(sessionId);
 
   const uploadMutation = useUploadVoiceSessionAudio(sessionId);
+  const deleteSessionMutation = useDeleteVoiceSession();
 
   if (isLoading) {
     return <VoiceAiSessionDetailSkeleton />;
@@ -65,7 +78,7 @@ export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPage
     return (
       <div className="px-6 py-10 md:px-8">
         <VoiceAiError
-          title="Failed to load voice session"
+          title="Failed to load conversation"
           message={getApiErrorMessage(error, "Could not load session.")}
           onRetry={() => void refetch()}
         />
@@ -77,42 +90,72 @@ export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPage
     notFound();
   }
 
-  const canUpload =
-    canExecute &&
-    (session.status === "pending" || session.status === "failed") &&
-    !uploadMutation.isPending;
+  const isServerProcessing =
+    session.status === "processing" || uploadMutation.isPending;
+  const canSend =
+    canSendAudio &&
+    !isServerProcessing &&
+    session.status !== "processing";
+  const isAwaitingFirstMessage =
+    session.status === "pending" && session.transcripts.length === 0;
 
-  const isProcessing = session.status === "processing" || uploadMutation.isPending;
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleSendFile = async (file: File) => {
+    setInputPhase("uploading");
     try {
+      setInputPhase("processing");
       await uploadMutation.mutateAsync(file);
-      toast.success("Audio processed successfully.");
+      setInputPhase("idle");
+      toast.success("Message processed.");
     } catch (uploadError) {
+      setInputPhase("failed");
       toast.error(getApiErrorMessage(uploadError, "Failed to process audio."));
-    } finally {
-      event.target.value = "";
+    }
+  };
+
+  const displayPhase: VoiceInputPhase = uploadMutation.isPending
+    ? inputPhase === "idle"
+      ? "processing"
+      : inputPhase
+    : session.status === "failed"
+      ? "failed"
+      : "idle";
+
+  const handleDeleteSession = async () => {
+    const label = session.title ?? "this conversation";
+    if (
+      !window.confirm(
+        `Delete "${label}" permanently? This removes all transcripts and audio.`,
+      )
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteSessionMutation.mutateAsync(sessionId);
+      toast.success("Conversation deleted.");
+      router.push(`/voice-ai/${session.voice_agent_id}`);
+    } catch (deleteError) {
+      toast.error(getApiErrorMessage(deleteError, "Failed to delete conversation."));
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="pb-10 md:pb-12">
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col pb-0">
       <div className="border-b border-white/[0.06] px-6 py-6 md:px-8">
         <Link
           href={`/voice-ai/${session.voice_agent_id}`}
           className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
-          Back to voice agent
+          Back to voice assistant
         </Link>
-        <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-foreground">
-                {session.title ?? "Voice session"}
+                {session.title ?? "Voice conversation"}
               </h1>
               <VoiceSessionStatusBadge status={session.status} />
             </div>
@@ -122,40 +165,38 @@ export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPage
                   href={`/voice-ai/${session.voice_agent_id}`}
                   className="font-medium transition-colors hover:text-brand"
                 >
-                  {session.voice_agent_name ?? "Voice agent"}
+                  {session.voice_agent_name ?? "Voice assistant"}
                 </Link>
               ) : (
-                (session.voice_agent_name ?? "Voice agent")
+                (session.voice_agent_name ?? "Voice assistant")
               )}
               {" · "}
               {session.ai_employee_name ?? "AI employee"}
             </p>
           </div>
-          {canUpload && (
-            <>
-              <Button
-                variant="brand"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="size-3.5" />
-                Upload audio
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_AUDIO_TYPES}
-                className="hidden"
-                onChange={(event) => void handleFileChange(event)}
-              />
-            </>
+          {canDelete && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="text-red-300 hover:text-red-200"
+              disabled={isServerProcessing || isDeleting}
+              onClick={() => void handleDeleteSession()}
+            >
+              {isDeleting ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="size-3.5" />
+              )}
+              Delete conversation
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="grid gap-6 px-6 pt-8 md:grid-cols-3 md:px-8">
-        <DashboardCard variant="panel" accent="emerald" className="p-5 md:col-span-1">
-          <h3 className="text-[14px] font-medium text-foreground">Session details</h3>
+      <div className="grid flex-1 gap-6 px-6 pt-6 md:grid-cols-[240px_1fr] md:px-8">
+        <DashboardCard variant="panel" accent="emerald" className="hidden h-fit p-5 md:block">
+          <h3 className="text-[14px] font-medium text-foreground">Session</h3>
           <dl className="mt-4 space-y-3 text-[13px]">
             <div>
               <dt className="text-muted-foreground">Status</dt>
@@ -164,27 +205,18 @@ export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPage
               </dd>
             </div>
             <div>
+              <dt className="text-muted-foreground">Messages</dt>
+              <dd className="mt-0.5 text-foreground">{session.transcripts.length}</dd>
+            </div>
+            <div>
               <dt className="text-muted-foreground">Started</dt>
               <dd className="mt-0.5 text-foreground">{formatDateTime(session.started_at)}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Completed</dt>
+              <dt className="text-muted-foreground">Last activity</dt>
               <dd className="mt-0.5 text-foreground">{formatDateTime(session.completed_at)}</dd>
             </div>
-            {session.audio_mime_type && (
-              <div>
-                <dt className="text-muted-foreground">Audio type</dt>
-                <dd className="mt-0.5 text-foreground">{session.audio_mime_type}</dd>
-              </div>
-            )}
           </dl>
-
-          {isProcessing && (
-            <div className="mt-4 flex items-center gap-2 text-[13px] text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              Processing audio…
-            </div>
-          )}
 
           {session.status === "failed" && session.error_message && (
             <p className="mt-4 rounded-lg border border-red-400/20 bg-red-400/5 p-3 text-[12px] text-red-300">
@@ -192,18 +224,33 @@ export function VoiceAiSessionDetailPage({ sessionId }: VoiceAiSessionDetailPage
             </p>
           )}
 
-          {!canExecute && session.status === "pending" && (
+          {isAwaitingFirstMessage && (
+            <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
+              Pending means this conversation is ready for your first voice message.
+              Record or upload audio below to begin.
+            </p>
+          )}
+
+          {!canSendAudio && (
             <p className="mt-4 text-[12px] text-muted-foreground">
-              You need execute permission to upload audio.
+              You need voice session write or execute permission to send messages.
             </p>
           )}
         </DashboardCard>
 
-        <div className="md:col-span-2">
-          <VoiceSessionTranscript
+        <div className="flex min-h-[480px] flex-col overflow-hidden rounded-xl border border-white/[0.06]">
+          <VoiceSessionChat
+            sessionId={sessionId}
             transcripts={session.transcripts}
             aiEmployeeName={session.ai_employee_name}
-            isLoading={isProcessing && session.transcripts.length === 0}
+            isLoading={isServerProcessing}
+            speakingTranscriptId={speakingTranscriptId}
+            onSpeakTranscript={setSpeakingTranscriptId}
+          />
+          <VoiceSessionComposer
+            phase={displayPhase}
+            canSend={canSend}
+            onSendFile={handleSendFile}
           />
         </div>
       </div>

@@ -13,6 +13,7 @@ from app.models.enums import BrowserTaskExecutionStatus, BrowserTaskStatus
 from app.schemas.browser_step import parse_browser_task_config, resolve_execution_steps
 from app.services.browser_profile_service import get_browser_profile_or_404
 from app.services.browser_profile_session_service import mark_profile_session_saved
+from app.services.browser_screenshot_store import screenshot_exists
 from app.services.browser_step_executor import StepExecutionError
 from app.services.browser_task_service import get_browser_task_or_404
 from app.services.playwright_engine import format_playwright_error, run_playwright_task
@@ -163,6 +164,7 @@ def run_browser_task(
         page_result = run_playwright_task(
             profile=profile,
             organization_id=organization_id,
+            execution_id=execution.id,
             target_url=task.target_url.strip(),
             steps=steps,
             secrets=secrets,
@@ -193,6 +195,7 @@ def run_browser_task(
         execution.execution_metadata = {
             **(execution.execution_metadata or {}),
             "steps_completed": page_result.steps_completed,
+            "step_timeline": page_result.step_timeline,
             "session_loaded": page_result.session_loaded,
             "session_saved": page_result.session_saved,
             "session_persistence_enabled": profile.session_persistence_enabled,
@@ -203,6 +206,10 @@ def run_browser_task(
         completed_at = datetime.now(UTC)
         error_message = format_playwright_error(exc)
         _append_log(logs, level="error", message=error_message)
+        has_screenshot = screenshot_exists(
+            organization_id=organization_id,
+            execution_id=execution.id,
+        )
         execution.status = BrowserTaskExecutionStatus.FAILED
         execution.error_message = error_message
         execution.logs = logs
@@ -217,32 +224,29 @@ def run_browser_task(
             **(execution.execution_metadata or {}),
             "steps_completed": exc.step_index,
             "failed_step": _failed_step_metadata(exc),
+            "step_timeline": [entry.to_dict() for entry in exc.step_timeline],
+            "has_failure_screenshot": has_screenshot,
             "duration_seconds": (completed_at - started_at).total_seconds(),
             "log_count": len(logs),
         }
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Browser task execution failed",
-        ) from exc
     except Exception as exc:
         completed_at = datetime.now(UTC)
         error_message = format_playwright_error(exc)
         _append_log(logs, level="error", message=error_message)
+        has_screenshot = screenshot_exists(
+            organization_id=organization_id,
+            execution_id=execution.id,
+        )
         execution.status = BrowserTaskExecutionStatus.FAILED
         execution.error_message = error_message
         execution.logs = logs
         execution.completed_at = completed_at
         execution.execution_metadata = {
             **(execution.execution_metadata or {}),
+            "has_failure_screenshot": has_screenshot,
             "duration_seconds": (completed_at - started_at).total_seconds(),
             "log_count": len(logs),
         }
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Browser task execution failed",
-        ) from exc
 
     db.commit()
     db.refresh(execution)

@@ -67,8 +67,8 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
           ai_employee_id: aiEmployeeId,
         }),
       toast,
-      successMessage: "Voice agent created successfully.",
-      errorFallback: "Failed to create voice agent.",
+      successMessage: "Voice assistant created successfully.",
+      errorFallback: "Failed to create voice assistant.",
       onSuccess: (agent) => {
         resetForm();
         onClose();
@@ -87,7 +87,7 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
       />
       <div className="relative w-full max-w-lg rounded-xl border border-white/[0.08] bg-background p-6 shadow-2xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-[16px] font-medium text-foreground">Create voice agent</h2>
+          <h2 className="text-[16px] font-medium text-foreground">Create voice assistant</h2>
           <button
             type="button"
             onClick={handleClose}
@@ -97,7 +97,7 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
           </button>
         </div>
         <p className="mt-2 text-[13px] text-muted-foreground">
-          Link an active AI employee to power voice transcription and responses.
+          Link an active AI employee to power voice conversations and responses.
         </p>
 
         <div className="mt-6 space-y-4">
@@ -154,7 +154,7 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
             ) : (
               <Plus className="size-3.5" />
             )}
-            Create agent
+            Create assistant
           </Button>
         </div>
       </div>

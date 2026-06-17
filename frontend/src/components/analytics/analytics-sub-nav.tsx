@@ -4,11 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { analyticsNavAccents, analyticsNavSections } from "@/config/analytics";
+import { useUserPermissions } from "@/hooks/use-auth-token";
+import { filterNavByPermissions } from "@/lib/auth/nav-access";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { cn } from "@/lib/utils";
 
 export function AnalyticsSubNav() {
   const pathname = usePathname();
+  const permissions = useUserPermissions();
+  const visibleSections = filterNavByPermissions(analyticsNavSections, permissions);
+
+  if (visibleSections.length === 0) {
+    return null;
+  }
 
   return (
     <nav
@@ -16,7 +24,7 @@ export function AnalyticsSubNav() {
       className="border-b border-white/[0.05] px-6 md:px-8"
     >
       <div className="flex gap-2 overflow-x-auto pb-4 pt-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {analyticsNavSections.map((section) => {
+        {visibleSections.map((section) => {
           const isActive =
             pathname === section.href ||
             (section.href !== "/analytics" && pathname.startsWith(`${section.href}/`)) ||

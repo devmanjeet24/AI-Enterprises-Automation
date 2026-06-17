@@ -10,6 +10,8 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from langchain_core.messages import AIMessage, HumanMessage
+
 from app.config import Settings
 from app.models.ai_employee import AIEmployee
 from app.models.enums import VoiceSessionStatus, VoiceTranscriptRole
@@ -43,6 +45,12 @@ ALLOWED_AUDIO_MIME_TYPES = frozenset({
     "audio/ogg",
     "video/webm",
     "video/mp4",
+})
+
+ALLOWED_UPLOAD_STATUSES = frozenset({
+    VoiceSessionStatus.PENDING,
+    VoiceSessionStatus.FAILED,
+    VoiceSessionStatus.COMPLETED,
 })
 
 
@@ -249,10 +257,10 @@ async def process_voice_session_audio(
     """Upload audio, transcribe with Whisper, and generate an AI employee response."""
     processing_started = False
 
-    if session.status not in {VoiceSessionStatus.PENDING, VoiceSessionStatus.FAILED}:
+    if session.status not in ALLOWED_UPLOAD_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Voice session audio can only be uploaded when status is pending or failed",
+            detail="Voice session audio can only be uploaded when status is pending, failed, or completed",
         )
 
     agent = get_voice_agent_or_404(
@@ -301,8 +309,16 @@ async def process_voice_session_audio(
         )
 
     upload_root = Path(settings.upload_dir)
-    relative_path = f"{session.organization_id}/voice/{session.id}/audio{extension}"
+    turn_id = uuid.uuid4()
+    relative_path = f"{session.organization_id}/voice/{session.id}/turn-{turn_id}{extension}"
     absolute_path = upload_root / relative_path
+
+    existing_transcripts = list_session_transcripts(
+        db,
+        session_id=session.id,
+        organization_id=session.organization_id,
+    )
+    conversation_history = build_conversation_history(existing_transcripts)
 
     session.status = VoiceSessionStatus.PROCESSING
     session.started_at = datetime.now(UTC)
@@ -334,6 +350,8 @@ async def process_voice_session_audio(
             metadata_={
                 "language": transcription.get("language"),
                 "segment_count": transcription.get("segments"),
+                "audio_file_path": relative_path,
+                "audio_mime_type": content_type or None,
             },
         )
         db.add(caller_transcript)
@@ -344,6 +362,7 @@ async def process_voice_session_audio(
             settings=settings,
             employee=employee,
             question=caller_text,
+            conversation_history=conversation_history,
             embedding_service=embedding_service,
             chroma_service=chroma_service,
             employee_rag_service=employee_rag_service,
@@ -371,7 +390,7 @@ async def process_voice_session_audio(
         db.commit()
         db.refresh(session)
         return build_voice_session_detail_response(db, session=session)
-    except HTTPException:
+    except HTTPException as exc:
         if processing_started:
             db.rollback()
             session = get_voice_session_or_404(
@@ -380,7 +399,10 @@ async def process_voice_session_audio(
                 organization_id=session.organization_id,
             )
             session.status = VoiceSessionStatus.FAILED
-            session.error_message = "Voice session processing failed"
+            detail = exc.detail
+            session.error_message = (
+                detail if isinstance(detail, str) else "Voice session processing failed"
+            )
             session.completed_at = datetime.now(UTC)
             db.commit()
         raise
@@ -396,10 +418,62 @@ async def process_voice_session_audio(
             session.error_message = str(exc)[:2000]
             session.completed_at = datetime.now(UTC)
             db.commit()
+        detail = (
+            str(exc)
+            if settings.debug
+            else "Failed to process voice session audio"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process voice session audio",
+            detail=detail,
         ) from exc
+
+
+def build_conversation_history(
+    transcripts: list[VoiceTranscript],
+) -> list[tuple[str, str]]:
+    """Map stored transcripts to RAG conversation history tuples."""
+    history: list[tuple[str, str]] = []
+    for transcript in transcripts:
+        if transcript.role == VoiceTranscriptRole.CALLER:
+            history.append(("user", transcript.content))
+        elif transcript.role == VoiceTranscriptRole.AI_ASSISTANT:
+            history.append(("assistant", transcript.content))
+    return history
+
+
+def _history_messages_from_voice(
+    conversation_history: list[tuple[str, str]],
+) -> list[HumanMessage | AIMessage]:
+    messages: list[HumanMessage | AIMessage] = []
+    for role, content in conversation_history:
+        if role == "user":
+            messages.append(HumanMessage(content=content))
+        else:
+            messages.append(AIMessage(content=content))
+    return messages
+
+
+def resolve_transcript_audio_path(
+    *,
+    session: VoiceSession,
+    transcript: VoiceTranscript,
+    upload_root: Path,
+) -> Path | None:
+    """Return the on-disk audio path for a caller transcript, if available."""
+    if transcript.role != VoiceTranscriptRole.CALLER:
+        return None
+
+    metadata = transcript.metadata_ or {}
+    relative_path = metadata.get("audio_file_path")
+    if not relative_path and session.audio_file_path:
+        relative_path = session.audio_file_path
+
+    if not relative_path:
+        return None
+
+    absolute_path = upload_root / str(relative_path)
+    return absolute_path if absolute_path.is_file() else None
 
 
 def _generate_voice_ai_response(
@@ -408,10 +482,12 @@ def _generate_voice_ai_response(
     settings: Settings,
     employee: AIEmployee,
     question: str,
+    conversation_history: list[tuple[str, str]],
     embedding_service: EmbeddingService,
     chroma_service: ChromaService,
     employee_rag_service: EmployeeRAGService,
 ) -> tuple[str, list[Any]]:
+    history_messages = _history_messages_from_voice(conversation_history)
     assignments = list_knowledge_assignments(db, employee=employee)
     if assignments:
         document_ids = [assignment.knowledge_document_id for assignment in assignments]
@@ -422,6 +498,7 @@ def _generate_voice_ai_response(
             document_ids=document_ids,
             embedding_service=embedding_service,
             chroma_service=chroma_service,
+            conversation_history=conversation_history,
         )
 
     rag_service = RAGService(settings)
@@ -434,6 +511,7 @@ def _generate_voice_ai_response(
         question=question,
         context="No knowledge base documents are assigned to this employee.",
         system_prompt=voice_prompt,
+        history_messages=history_messages,
     )
     return answer, []
 

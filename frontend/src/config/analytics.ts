@@ -17,6 +17,8 @@ import { employeeStatusLabels } from "@/config/ai-employees";
 import { taskStatusLabels } from "@/config/agent-teams";
 import { researchStatusLabels, researchTemplateLabels } from "@/config/research-hub";
 import { executionStatusLabels, workflowStatusLabels } from "@/config/workflows";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { PermissionNavItem } from "@/lib/auth/nav-access";
 import type { BrowserAnalytics } from "@/lib/browser-automation/types";
 import type { DashboardOverview } from "@/lib/dashboard/types";
 import type { DashboardAccent } from "@/lib/dashboard-accents";
@@ -46,7 +48,7 @@ export type AnalyticsNavSectionId =
   | "browser-automation"
   | "reports";
 
-export interface AnalyticsNavSection {
+export interface AnalyticsNavSection extends PermissionNavItem {
   id: AnalyticsNavSectionId;
   title: string;
   description: string;
@@ -62,6 +64,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Organization-wide KPIs and cross-module activity.",
     href: "/analytics",
     enabled: true,
+    readPermissions: [PERMISSIONS.ORGANIZATIONS_READ],
   },
   {
     id: "organization",
@@ -69,6 +72,11 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Users, departments, teams, and workspace structure.",
     href: "/analytics/organization",
     enabled: true,
+    readPermissions: [
+      PERMISSIONS.USERS_READ,
+      PERMISSIONS.DEPARTMENTS_READ,
+      PERMISSIONS.TEAMS_READ,
+    ],
   },
   {
     id: "knowledge",
@@ -76,6 +84,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Document corpus, ingestion, and query activity.",
     href: "/analytics/knowledge",
     enabled: true,
+    readPermissions: [PERMISSIONS.DOCUMENTS_READ],
   },
   {
     id: "ai-employees",
@@ -83,6 +92,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Agent roster, chat sessions, and utilization.",
     href: "/analytics/ai-employees",
     enabled: true,
+    readPermissions: [PERMISSIONS.EMPLOYEES_READ],
   },
   {
     id: "agent-teams",
@@ -90,6 +100,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Multi-agent task runs and team performance.",
     href: "/analytics/agent-teams",
     enabled: true,
+    readPermissions: [PERMISSIONS.AGENT_TEAMS_READ],
   },
   {
     id: "workflows",
@@ -97,6 +108,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Pipeline executions, success rates, and throughput.",
     href: "/analytics/workflows",
     enabled: true,
+    readPermissions: [PERMISSIONS.WORKFLOWS_READ],
   },
   {
     id: "research",
@@ -104,6 +116,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Research projects, reports, and run activity.",
     href: "/analytics/research",
     enabled: true,
+    readPermissions: [PERMISSIONS.RESEARCH_PROJECTS_READ],
   },
   {
     id: "browser-automation",
@@ -111,6 +124,10 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Profiles, tasks, and execution metrics.",
     href: "/analytics/browser-automation",
     enabled: true,
+    readPermissions: [
+      PERMISSIONS.BROWSER_PROFILES_READ,
+      PERMISSIONS.BROWSER_TASKS_READ,
+    ],
   },
   {
     id: "reports",
@@ -118,6 +135,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Research report outcomes and export activity.",
     href: "/analytics/reports",
     enabled: true,
+    readPermissions: [PERMISSIONS.RESEARCH_PROJECTS_READ],
   },
 ];
 

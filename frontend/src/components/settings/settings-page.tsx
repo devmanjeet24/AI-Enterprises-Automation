@@ -1,9 +1,10 @@
 "use client";
 
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-card";
-import { useAuthUser } from "@/hooks/use-auth-token";
+import { useAuthUser, useUserPermissions } from "@/hooks/use-auth-token";
 import { useDashboardOverview } from "@/hooks/use-dashboard-overview";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { canAccessSettings } from "@/lib/auth/nav-access";
 
 import { SettingsHero } from "./settings-hero";
 import { SettingsNavGrid } from "./settings-nav-grid";
@@ -14,6 +15,7 @@ import { isAccessDeniedError } from "@/lib/settings/access";
 
 export function SettingsPage() {
   const user = useAuthUser();
+  const permissions = useUserPermissions();
 
   const {
     data: overview,
@@ -25,7 +27,9 @@ export function SettingsPage() {
 
   const organizationName = user?.organization_name ?? "your organization";
   const isInitialLoading = isOverviewLoading && !overview;
-  const accessDenied = isOverviewError && isAccessDeniedError(overviewError);
+  const accessDenied =
+    !canAccessSettings(permissions) ||
+    (isOverviewError && isAccessDeniedError(overviewError));
 
   if (accessDenied) {
     return (

@@ -16,6 +16,22 @@ type RequestOptions = Omit<RequestInit, "body"> & {
   token?: string | null;
 };
 
+function buildRequestHeaders(
+  token?: string | null,
+  extra?: HeadersInit,
+): HeadersInit {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  if (siteConfig.apiUrl.includes("ngrok")) {
+    headers["ngrok-skip-browser-warning"] = "true";
+  }
+
+  return { ...headers, ...extra };
+}
+
 export async function apiClient<T>(
   path: string,
   options: RequestOptions = {},
@@ -24,11 +40,7 @@ export async function apiClient<T>(
 
   const response = await fetch(`${siteConfig.apiUrl}${path}`, {
     ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
+    headers: buildRequestHeaders(token, headers),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
@@ -73,9 +85,7 @@ export async function apiDownload(
 
   const response = await fetch(`${siteConfig.apiUrl}${path}`, {
     method: "GET",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: buildRequestHeaders(token),
   });
 
   if (!response.ok) {
@@ -121,11 +131,16 @@ export async function apiUpload<T>(
 ): Promise<T> {
   const { token, method = "POST" } = options;
 
+  const uploadHeaders: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  if (siteConfig.apiUrl.includes("ngrok")) {
+    uploadHeaders["ngrok-skip-browser-warning"] = "true";
+  }
+
   const response = await fetch(`${siteConfig.apiUrl}${path}`, {
     method,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: uploadHeaders,
     body: formData,
   });
 

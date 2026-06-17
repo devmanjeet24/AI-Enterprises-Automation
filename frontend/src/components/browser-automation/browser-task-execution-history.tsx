@@ -1,7 +1,7 @@
 "use client";
 
-import { Clock, Eye, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Camera, Clock, Eye, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
@@ -12,6 +12,7 @@ import {
 } from "@/config/browser-automation";
 import type { BrowserTaskExecutionSummary } from "@/lib/browser-automation/types";
 
+import { BrowserExecutionScreenshot } from "./browser-execution-screenshot";
 import { BrowserExecutionStatusBadge } from "./browser-execution-status-badge";
 import { BrowserExecutionViewerModal } from "./browser-execution-viewer-modal";
 
@@ -21,6 +22,8 @@ interface BrowserTaskExecutionHistoryProps {
   isError?: boolean;
   errorMessage?: string | null;
   onRetry?: () => void;
+  autoOpenExecution?: BrowserTaskExecutionSummary | null;
+  onAutoOpenHandled?: () => void;
 }
 
 export function BrowserTaskExecutionHistory({
@@ -29,6 +32,8 @@ export function BrowserTaskExecutionHistory({
   isError = false,
   errorMessage,
   onRetry,
+  autoOpenExecution,
+  onAutoOpenHandled,
 }: BrowserTaskExecutionHistoryProps) {
   const [selectedExecution, setSelectedExecution] =
     useState<BrowserTaskExecutionSummary | null>(null);
@@ -36,6 +41,12 @@ export function BrowserTaskExecutionHistory({
   const sortedExecutions = [...executions].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
+
+  useEffect(() => {
+    if (!autoOpenExecution) return;
+    setSelectedExecution(autoOpenExecution);
+    onAutoOpenHandled?.();
+  }, [autoOpenExecution, onAutoOpenHandled]);
 
   if (isLoading) {
     return (
@@ -100,6 +111,10 @@ export function BrowserTaskExecutionHistory({
       <div className="space-y-3">
         {sortedExecutions.map((execution) => {
           const duration = formatDuration(execution.started_at, execution.completed_at);
+          const stepsLabel =
+            execution.steps_total != null
+              ? `${execution.steps_completed ?? 0}/${execution.steps_total} steps`
+              : null;
 
           return (
             <DashboardCard
@@ -116,20 +131,26 @@ export function BrowserTaskExecutionHistory({
                       Execution {execution.id.slice(0, 8)}
                     </p>
                     <BrowserExecutionStatusBadge status={execution.status} />
+                    {execution.has_failure_screenshot && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        <Camera className="size-3" />
+                        Screenshot
+                      </span>
+                    )}
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-tertiary">
                     <span>{formatRelativeDate(execution.created_at)}</span>
                     {duration && <span>Duration: {duration}</span>}
+                    {stepsLabel && <span>{stepsLabel}</span>}
                     {execution.started_at && (
                       <span>Started {formatDateTime(execution.started_at)}</span>
                     )}
-                    {execution.completed_at && (
-                      <span>Completed {formatDateTime(execution.completed_at)}</span>
-                    )}
-                    {execution.error_message && (
-                      <span className="text-destructive">Error recorded</span>
-                    )}
                   </div>
+                  {execution.error_message && (
+                    <p className="mt-2 line-clamp-2 text-[12px] text-destructive">
+                      {execution.error_message}
+                    </p>
+                  )}
                 </div>
                 <Button
                   variant="secondary"
@@ -140,6 +161,15 @@ export function BrowserTaskExecutionHistory({
                   View
                 </Button>
               </div>
+              {execution.has_failure_screenshot && (
+                <div className="border-t border-white/[0.06] px-5 pb-5">
+                  <BrowserExecutionScreenshot
+                    executionId={execution.id}
+                    hasScreenshot
+                    compact
+                  />
+                </div>
+              )}
             </DashboardCard>
           );
         })}
