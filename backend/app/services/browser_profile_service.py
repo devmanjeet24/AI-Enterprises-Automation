@@ -9,6 +9,10 @@ from sqlalchemy.orm import Session
 from app.core.text import slugify
 from app.models.browser_profile import BrowserProfile
 from app.schemas.browser_profile import BrowserProfileCreateRequest, BrowserProfileUpdateRequest
+from app.services.browser_profile_session_service import (
+    delete_profile_session_files,
+    sync_profile_session_on_update,
+)
 
 
 def _resolve_slug(name: str, slug: str | None) -> str:
@@ -96,6 +100,7 @@ def create_browser_profile(
         viewport_width=payload.viewport_width,
         viewport_height=payload.viewport_height,
         config=payload.config,
+        session_persistence_enabled=payload.session_persistence_enabled,
     )
     db.add(profile)
     db.commit()
@@ -112,9 +117,25 @@ def update_browser_profile(
 ) -> BrowserProfile:
     updates = payload.model_dump(exclude_unset=True)
 
-    for field in ("name", "description", "user_agent", "viewport_width", "viewport_height", "config", "is_active"):
+    for field in (
+        "name",
+        "description",
+        "user_agent",
+        "viewport_width",
+        "viewport_height",
+        "config",
+        "is_active",
+        "session_persistence_enabled",
+    ):
         if field in updates:
             setattr(profile, field, updates[field])
+
+    if "session_persistence_enabled" in updates:
+        sync_profile_session_on_update(
+            db,
+            profile=profile,
+            session_persistence_enabled=updates["session_persistence_enabled"],
+        )
 
     if "slug" in updates or "name" in updates:
         slug = _resolve_slug(
@@ -135,5 +156,6 @@ def update_browser_profile(
 
 
 def delete_browser_profile(db: Session, *, profile: BrowserProfile) -> None:
+    delete_profile_session_files(profile)
     db.delete(profile)
     db.commit()

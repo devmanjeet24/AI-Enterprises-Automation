@@ -32,6 +32,14 @@ class FailingMockLLM:
         raise RuntimeError("Groq API unavailable")
 
 
+class NoInfoMockLLM:
+    def invoke(self, messages: list) -> object:
+        class Response:
+            content = NO_RELEVANT_INFORMATION_MESSAGE
+
+        return Response()
+
+
 @pytest.fixture(autouse=True)
 def groq_api_key_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GROQ_API_KEY", os.getenv("GROQ_API_KEY", "test-groq-key"))
@@ -204,6 +212,26 @@ def test_chat_returns_no_information_when_retrieval_is_empty(
         json={"message": "What is the company refund policy for Mars travel?"},
     )
     assert response.status_code == 200
+    assert response.json()["answer"] == NO_RELEVANT_INFORMATION_MESSAGE
+    assert response.json()["sources"] == []
+
+
+def test_chat_omits_sources_when_model_declines_to_answer(
+    chat_client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    app.dependency_overrides[employees_endpoints.get_employee_rag_service] = (
+        lambda: EmployeeRAGService(get_settings(), llm=NoInfoMockLLM())
+    )
+
+    employee, _document = _prepare_active_employee_with_knowledge(chat_client, auth_headers)
+
+    response = chat_client.post(
+        f"/api/v1/employees/{employee['id']}/chat",
+        headers=auth_headers,
+        json={"message": "How many leave days are employees allowed?"},
+    )
+    assert response.status_code == 200, response.text
     assert response.json()["answer"] == NO_RELEVANT_INFORMATION_MESSAGE
     assert response.json()["sources"] == []
 

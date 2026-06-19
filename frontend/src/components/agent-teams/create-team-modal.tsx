@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { slugifyTeamName } from "@/config/agent-teams";
 import { useCreateAgentTeam } from "@/hooks/use-agent-teams";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -62,19 +62,22 @@ export function CreateTeamModal({ open, onClose }: CreateTeamModalProps) {
   };
 
   const handleCreate = async () => {
-    try {
-      const team = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slug.trim() || slugifyTeamName(name),
-        description: description.trim() || undefined,
-      });
-      toast.success(`"${team.name}" created successfully.`);
-      resetForm();
-      onClose();
-      router.push(`/agent-teams/${team.id}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create agent team."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slug.trim() || slugifyTeamName(name),
+          description: description.trim() || undefined,
+        }),
+      toast,
+      successMessage: (team) => `Agent team "${team.name}" created successfully.`,
+      errorFallback: "Failed to create agent team.",
+      onSuccess: (team) => {
+        resetForm();
+        onClose();
+        router.push(`/agent-teams/${team.id}`);
+      },
+    });
   };
 
   if (!open) return null;

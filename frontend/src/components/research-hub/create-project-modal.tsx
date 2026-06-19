@@ -22,7 +22,7 @@ import {
   useResearchTemplates,
 } from "@/hooks/use-research-projects";
 import { useAssignableAgentTeams } from "@/hooks/use-workflows";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import type { ResearchTemplateType } from "@/lib/research-hub/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
@@ -96,22 +96,26 @@ export function CreateProjectModal({ open, onClose }: CreateProjectModalProps) {
   const handleCreate = async () => {
     if (!templateType) return;
 
-    try {
-      const project = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slugifyProjectName(name),
-        description: description.trim() || undefined,
-        research_brief: researchBrief.trim(),
-        template_type: templateType,
-        agent_team_id: agentTeamId,
-      });
-      toast.success(`"${project.name}" created successfully.`);
-      resetForm();
-      onClose();
-      router.push(`/research-hub/${project.id}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create research project."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slugifyProjectName(name),
+          description: description.trim() || undefined,
+          research_brief: researchBrief.trim(),
+          template_type: templateType,
+          agent_team_id: agentTeamId,
+        }),
+      toast,
+      successMessage: (project) =>
+        `Research project "${project.name}" created successfully.`,
+      errorFallback: "Failed to create research project.",
+      onSuccess: (project) => {
+        resetForm();
+        onClose();
+        router.push(`/research-hub/${project.id}`);
+      },
+    });
   };
 
   if (!open) return null;

@@ -24,6 +24,7 @@ export interface PermissionMatrixRow {
 }
 
 export const PERMISSION_RESOURCE_GROUPS: { resource: string; label: string }[] = [
+  { resource: "organizations", label: "Organization" },
   { resource: "departments", label: "Departments" },
   { resource: "teams", label: "Org Teams" },
   { resource: "users", label: "Users" },

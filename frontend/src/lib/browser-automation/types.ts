@@ -19,6 +19,9 @@ export interface BrowserProfile {
   viewport_height: number | null;
   config: Record<string, unknown> | null;
   is_active: boolean;
+  session_persistence_enabled: boolean;
+  session_updated_at: string | null;
+  session_stored: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +57,26 @@ export interface BrowserTaskExecutionSummary {
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
+  steps_completed?: number | null;
+  steps_total?: number | null;
+  has_failure_screenshot?: boolean;
+}
+
+export interface BrowserExecutionStepTimelineEntry {
+  index: number;
+  action: string;
+  description: string;
+  status: "completed" | "failed" | "skipped" | "pending";
+  duration_ms: number;
+  selector?: string | null;
+  error?: string | null;
+}
+
+export interface BrowserExecutionFailedStep {
+  index: number;
+  action: string;
+  selector?: string | null;
+  message: string;
 }
 
 export interface BrowserTaskExecution extends BrowserTaskExecutionSummary {
@@ -91,6 +114,7 @@ export interface CreateBrowserProfileInput {
   viewport_width?: number;
   viewport_height?: number;
   config?: Record<string, unknown>;
+  session_persistence_enabled?: boolean;
 }
 
 export interface UpdateBrowserProfileInput {
@@ -102,6 +126,7 @@ export interface UpdateBrowserProfileInput {
   viewport_height?: number | null;
   config?: Record<string, unknown> | null;
   is_active?: boolean;
+  session_persistence_enabled?: boolean;
 }
 
 export interface CreateBrowserTaskInput {

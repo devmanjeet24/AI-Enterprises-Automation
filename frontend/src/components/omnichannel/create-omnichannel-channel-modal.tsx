@@ -9,14 +9,17 @@ import { Label } from "@/components/ui/label";
 import { slugifyOmnichannelName } from "@/config/omnichannel";
 import { useEmployees } from "@/hooks/use-ai-employees";
 import { useCreateOmnichannelChannel } from "@/hooks/use-omnichannel";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import type { OmnichannelChannelType } from "@/lib/omnichannel/types";
 import { useToast } from "@/providers/toast-provider";
 
 const channelTypes: { value: OmnichannelChannelType; label: string }[] = [
   { value: "website_chat", label: "Website Chat" },
-  { value: "telegram", label: "Telegram (simulated)" },
-  { value: "slack", label: "Slack (simulated)" },
+  { value: "telegram", label: "Telegram" },
+  { value: "slack", label: "Slack" },
+  { value: "email", label: "Email" },
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "linkedin", label: "LinkedIn" },
   { value: "internal", label: "Internal Messaging" },
 ];
 
@@ -35,12 +38,28 @@ export function CreateOmnichannelChannelModal({
   const [description, setDescription] = useState("");
   const [channelType, setChannelType] = useState<OmnichannelChannelType>("website_chat");
   const [aiEmployeeId, setAiEmployeeId] = useState("");
+  const [botToken, setBotToken] = useState("");
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [fromAddress, setFromAddress] = useState("");
+  const [whatsappToken, setWhatsappToken] = useState("");
+  const [whatsappPhoneId, setWhatsappPhoneId] = useState("");
+  const [whatsappVerifyToken, setWhatsappVerifyToken] = useState("");
 
   const resetForm = useCallback(() => {
     setName("");
     setDescription("");
     setChannelType("website_chat");
     setAiEmployeeId("");
+    setBotToken("");
+    setSmtpHost("");
+    setSmtpUser("");
+    setSmtpPassword("");
+    setFromAddress("");
+    setWhatsappToken("");
+    setWhatsappPhoneId("");
+    setWhatsappVerifyToken("");
   }, []);
 
   useEffect(() => {
@@ -58,22 +77,48 @@ export function CreateOmnichannelChannelModal({
 
   if (!open) return null;
 
+  const buildConfig = () => {
+    if (channelType === "telegram" && botToken) return { bot_token: botToken };
+    if (channelType === "email") {
+      return {
+        provider: "smtp",
+        smtp_host: smtpHost || undefined,
+        smtp_user: smtpUser || undefined,
+        smtp_password: smtpPassword || undefined,
+        from_address: fromAddress || undefined,
+      };
+    }
+    if (channelType === "whatsapp") {
+      return {
+        access_token: whatsappToken || undefined,
+        phone_number_id: whatsappPhoneId || undefined,
+        verify_token: whatsappVerifyToken || undefined,
+      };
+    }
+    return undefined;
+  };
+
   const handleCreate = async () => {
     if (!name.trim()) return;
-    try {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slugifyOmnichannelName(name),
-        description: description.trim() || undefined,
-        channel_type: channelType,
-        ai_employee_id: aiEmployeeId || undefined,
-      });
-      toast.success("Channel created");
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create channel."));
-    }
+    const config = buildConfig();
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slugifyOmnichannelName(name),
+          description: description.trim() || undefined,
+          channel_type: channelType,
+          ai_employee_id: aiEmployeeId || undefined,
+          config,
+        }),
+      toast,
+      successMessage: "Channel created successfully.",
+      errorFallback: "Failed to create channel.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   return (
@@ -122,6 +167,63 @@ export function CreateOmnichannelChannelModal({
               ))}
             </select>
           </div>
+          {channelType === "telegram" && (
+            <div>
+              <Label htmlFor="telegram-token">Bot token</Label>
+              <Input id="telegram-token" value={botToken} onChange={(e) => setBotToken(e.target.value)} className="mt-1.5" placeholder="123456:ABC-DEF..." />
+            </div>
+          )}
+          {channelType === "slack" && (
+            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-[12px] text-muted-foreground">
+              Slack credentials are configured in backend environment variables
+              (SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, SLACK_SIGNING_SECRET, SLACK_BOT_TOKEN).
+              After creating this channel, open its detail page for Event Subscriptions and OAuth setup.
+            </div>
+          )}
+          {channelType === "linkedin" && (
+            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-[12px] text-muted-foreground">
+              LinkedIn credentials are configured in backend environment variables
+              (LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, API_PUBLIC_URL).
+              Requires Community Management API approval. After creating this channel, open its
+              detail page to connect your Company Page via OAuth.
+            </div>
+          )}
+          {channelType === "email" && (
+            <>
+              <div>
+                <Label htmlFor="smtp-host">SMTP host</Label>
+                <Input id="smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="mt-1.5" placeholder="smtp.gmail.com" />
+              </div>
+              <div>
+                <Label htmlFor="smtp-user">SMTP user</Label>
+                <Input id="smtp-user" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="smtp-password">SMTP password</Label>
+                <Input id="smtp-password" type="password" value={smtpPassword} onChange={(e) => setSmtpPassword(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="from-address">From address</Label>
+                <Input id="from-address" value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} className="mt-1.5" />
+              </div>
+            </>
+          )}
+          {channelType === "whatsapp" && (
+            <>
+              <div>
+                <Label htmlFor="wa-token">Access token</Label>
+                <Input id="wa-token" value={whatsappToken} onChange={(e) => setWhatsappToken(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="wa-phone-id">Phone number ID</Label>
+                <Input id="wa-phone-id" value={whatsappPhoneId} onChange={(e) => setWhatsappPhoneId(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="wa-verify">Webhook verify token</Label>
+                <Input id="wa-verify" value={whatsappVerifyToken} onChange={(e) => setWhatsappVerifyToken(e.target.value)} className="mt-1.5" />
+              </div>
+            </>
+          )}
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>

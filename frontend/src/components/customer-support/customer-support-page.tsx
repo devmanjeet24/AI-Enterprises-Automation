@@ -161,56 +161,58 @@ export function CustomerSupportPage() {
             />
           ) : (
             <>
-              <div className="mb-6 flex flex-wrap items-center gap-2">
-                {statusFilters.map((filter) => (
-                  <button
-                    key={filter.value}
-                    type="button"
-                    onClick={() => setStatusFilter(filter.value)}
-                    className={cn(
-                      "rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors",
-                      statusFilter === filter.value
-                        ? "border-[#6B9BF8]/30 bg-[#6B9BF8]/10 text-[#6B9BF8]"
-                        : "border-white/[0.08] bg-white/[0.03] text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-                <select
-                  value={priorityFilter}
-                  onChange={(event) =>
-                    setPriorityFilter(event.target.value as PriorityFilter)
-                  }
-                  className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-foreground outline-none"
-                >
-                  <option value="all">All priorities</option>
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-                <select
-                  value={categoryFilter}
-                  onChange={(event) => setCategoryFilter(event.target.value)}
-                  className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-foreground outline-none"
-                >
-                  <option value="all">All categories</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
+              <div className="mb-6 -mx-1 overflow-x-auto px-1 pb-1">
+                <div className="flex min-w-max flex-wrap items-center gap-2">
+                  {statusFilters.map((filter) => (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setStatusFilter(filter.value)}
+                      className={cn(
+                        "rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors",
+                        statusFilter === filter.value
+                          ? "border-[#6B9BF8]/30 bg-[#6B9BF8]/10 text-[#6B9BF8]"
+                          : "border-white/[0.08] bg-white/[0.03] text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {filter.label}
+                    </button>
                   ))}
-                </select>
-                <label className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={unassignedOnly}
-                    onChange={(event) => setUnassignedOnly(event.target.checked)}
-                    className="rounded border-white/20"
-                  />
-                  Unassigned only
-                </label>
+                  <select
+                    value={priorityFilter}
+                    onChange={(event) =>
+                      setPriorityFilter(event.target.value as PriorityFilter)
+                    }
+                    className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-foreground outline-none"
+                  >
+                    <option value="all">All priorities</option>
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                  <select
+                    value={categoryFilter}
+                    onChange={(event) => setCategoryFilter(event.target.value)}
+                    className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-foreground outline-none"
+                  >
+                    <option value="all">All categories</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={unassignedOnly}
+                      onChange={(event) => setUnassignedOnly(event.target.checked)}
+                      className="rounded border-white/20"
+                    />
+                    Unassigned only
+                  </label>
+                </div>
               </div>
               <SupportTicketCardGrid tickets={filteredTickets} />
             </>
@@ -218,7 +220,9 @@ export function CustomerSupportPage() {
         </section>
       </div>
 
-      <CreateTicketModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      {canCreate && (
+        <CreateTicketModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      )}
       <ManageCategoriesPanel
         open={categoriesOpen}
         onClose={() => setCategoriesOpen(false)}

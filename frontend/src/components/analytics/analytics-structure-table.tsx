@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { Building2 } from "lucide-react";
+
 import { DashboardCard, DashboardCardHeader } from "@/components/dashboard/dashboard-card";
 import type { OrganizationStructureRow } from "@/lib/analytics/compute/organization";
 import { dashboardAccents } from "@/lib/dashboard-accents";
@@ -43,11 +46,9 @@ export function AnalyticsStructureTable({
               ))
             ) : rows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={3}
-                  className="px-5 py-10 text-center text-muted-foreground"
-                >
-                  {emptyMessage}
+                <td colSpan={3} className="px-5 py-10 text-center">
+                  <Building2 className="mx-auto size-6 text-tertiary" />
+                  <p className="mt-3 text-muted-foreground">{emptyMessage}</p>
                 </td>
               </tr>
             ) : (
@@ -57,7 +58,12 @@ export function AnalyticsStructureTable({
                   className="border-b border-white/[0.04] last:border-b-0"
                 >
                   <td className="px-5 py-3.5 font-medium text-foreground">
-                    {row.departmentName}
+                    <Link
+                      href={`/settings/departments/${row.departmentId}`}
+                      className="transition-colors hover:text-brand"
+                    >
+                      {row.departmentName}
+                    </Link>
                   </td>
                   <td className="px-5 py-3.5 tabular-nums text-muted-foreground">
                     {row.teamCount}

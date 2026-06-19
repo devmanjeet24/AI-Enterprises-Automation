@@ -1,3 +1,4 @@
+import { AiEmployeeStudioVisual } from "./ai-employee-studio-visual";
 import { FeatureSection } from "./feature-section";
 
 export function AiEmployeeStudioSection() {
@@ -13,7 +14,7 @@ export function AiEmployeeStudioSection() {
         "Conversation history with grounded responses",
         "Deploy to support, sales, and operations teams",
       ]}
-      mockVariant="chat"
+      visual={<AiEmployeeStudioVisual />}
     />
   );
 }

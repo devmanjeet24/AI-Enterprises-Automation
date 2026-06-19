@@ -23,6 +23,8 @@ class Settings(BaseSettings):
 
     api_v1_prefix: str = "/api/v1"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    frontend_url: str = "http://localhost:3000"
+    api_public_url: str = "http://localhost:8000"
 
     database_url: str
 
@@ -44,6 +46,19 @@ class Settings(BaseSettings):
     groq_max_tokens: int = 512
 
     whisper_model_name: str = "base"
+
+    slack_client_id: str = ""
+    slack_client_secret: str = ""
+    slack_signing_secret: str = ""
+    slack_bot_token: str = ""
+
+    linkedin_client_id: str = ""
+    linkedin_client_secret: str = ""
+    linkedin_api_version: str = "202601"
+    linkedin_developer_application_id: str = ""
+
+    browser_session_dir: str = "browser_sessions"
+    browser_screenshot_dir: str = "browser_screenshots"
 
     @field_validator("database_url", mode="after")
     @classmethod

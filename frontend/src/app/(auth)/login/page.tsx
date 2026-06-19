@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
 import { LoginForm } from "@/components/auth/login-form";
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <AuthSplitLayout>
-      <LoginForm />
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
     </AuthSplitLayout>
   );
 }

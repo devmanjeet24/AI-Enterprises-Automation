@@ -1,8 +1,48 @@
 """Tests for customer support ticket APIs."""
 
+import os
 import uuid
 
+import pytest
 from fastapi.testclient import TestClient
+
+from app.api.v1.endpoints import support_tickets as support_tickets_endpoints
+from app.config import get_settings
+from app.main import app
+from app.services.employee_rag_service import EmployeeRAGService
+from tests.test_document_retrieval import MockEmbeddingService
+
+
+class MockLLM:
+    def invoke(self, messages: list) -> object:
+        class Response:
+            content = (
+                "Employees receive 20 days of PTO per year after completing "
+                "their probation period."
+            )
+
+        return Response()
+
+
+@pytest.fixture(autouse=True)
+def groq_api_key_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GROQ_API_KEY", os.getenv("GROQ_API_KEY", "test-groq-key"))
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def support_ai_client(client: TestClient) -> TestClient:
+    app.dependency_overrides[support_tickets_endpoints.get_embedding_service] = (
+        lambda: MockEmbeddingService()
+    )
+    app.dependency_overrides[support_tickets_endpoints.get_employee_rag_service] = (
+        lambda: EmployeeRAGService(get_settings(), llm=MockLLM())
+    )
+    yield client
+    app.dependency_overrides.pop(support_tickets_endpoints.get_embedding_service, None)
+    app.dependency_overrides.pop(support_tickets_endpoints.get_employee_rag_service, None)
 
 
 def _create_category(client: TestClient, headers: dict[str, str], **overrides: object) -> dict:
@@ -192,3 +232,180 @@ def test_support_ticket_not_found(client: TestClient, auth_headers: dict[str, st
     missing_id = str(uuid.uuid4())
     response = client.get(f"/api/v1/support-tickets/{missing_id}", headers=auth_headers)
     assert response.status_code == 404
+
+
+def test_support_ticket_suggest_response_requires_ai_employee(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    create_response = client.post(
+        "/api/v1/support-tickets",
+        json={
+            "subject": "PTO balance question",
+            "description": "How many PTO days do I have left?",
+        },
+        headers=auth_headers,
+    )
+    assert create_response.status_code == 201
+    ticket_id = create_response.json()["id"]
+
+    response = client.post(
+        f"/api/v1/support-tickets/{ticket_id}/suggest-response",
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert "assigned AI employee" in response.json()["detail"]
+
+
+def test_support_ticket_suggest_response(
+    support_ai_client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    employee = _create_employee(
+        support_ai_client,
+        auth_headers,
+        name="HR Assistant",
+        role="Human Resources",
+        system_prompt="You are an HR assistant who answers policy questions.",
+    )
+    _activate_employee(support_ai_client, auth_headers, employee["id"])
+
+    create_response = support_ai_client.post(
+        "/api/v1/support-tickets",
+        json={
+            "subject": "PTO policy question",
+            "description": "How many PTO days do employees receive each year?",
+            "assigned_ai_employee_id": employee["id"],
+        },
+        headers=auth_headers,
+    )
+    assert create_response.status_code == 201
+    ticket_id = create_response.json()["id"]
+
+    suggest_response = support_ai_client.post(
+        f"/api/v1/support-tickets/{ticket_id}/suggest-response",
+        headers=auth_headers,
+    )
+    assert suggest_response.status_code == 200, suggest_response.text
+    payload = suggest_response.json()
+    assert "PTO" in payload["suggestion"]
+    assert isinstance(payload["sources"], list)
+    assert 0.0 <= payload["confidence"] <= 1.0
+    assert payload["recommended_status"] in {
+        "open",
+        "in_progress",
+        "waiting",
+        "resolved",
+        "closed",
+    }
+    assert isinstance(payload["reasoning"], str)
+    assert payload["reasoning"]
+    assert isinstance(payload["can_auto_resolve"], bool)
+
+
+def test_support_ticket_cannot_resolve_without_reply(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    create_response = client.post(
+        "/api/v1/support-tickets",
+        json={
+            "subject": "Missing resolution reply",
+            "description": "Customer asked about PTO carryover rules.",
+        },
+        headers=auth_headers,
+    )
+    assert create_response.status_code == 201
+    ticket_id = create_response.json()["id"]
+
+    detail_response = client.get(f"/api/v1/support-tickets/{ticket_id}", headers=auth_headers)
+    assert detail_response.status_code == 200
+    assert detail_response.json()["has_resolution"] is False
+
+    resolve_response = client.patch(
+        f"/api/v1/support-tickets/{ticket_id}",
+        json={"status": "resolved"},
+        headers=auth_headers,
+    )
+    assert resolve_response.status_code == 400
+    assert "cannot be resolved" in resolve_response.json()["detail"].lower()
+
+
+def test_support_ticket_reopen_requires_new_resolution(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    create_response = client.post(
+        "/api/v1/support-tickets",
+        json={
+            "subject": "Reopen resolution test",
+            "description": "Need updated PTO guidance.",
+            "initial_message": "We are reviewing your request.",
+        },
+        headers=auth_headers,
+    )
+    assert create_response.status_code == 201
+    ticket_id = create_response.json()["id"]
+
+    resolve_response = client.patch(
+        f"/api/v1/support-tickets/{ticket_id}",
+        json={"status": "resolved"},
+        headers=auth_headers,
+    )
+    assert resolve_response.status_code == 200
+
+    reopen_response = client.patch(
+        f"/api/v1/support-tickets/{ticket_id}",
+        json={"status": "open"},
+        headers=auth_headers,
+    )
+    assert reopen_response.status_code == 200
+
+    detail_response = client.get(f"/api/v1/support-tickets/{ticket_id}", headers=auth_headers)
+    assert detail_response.status_code == 200
+    assert detail_response.json()["has_resolution"] is False
+
+    blocked_resolve = client.patch(
+        f"/api/v1/support-tickets/{ticket_id}",
+        json={"status": "resolved"},
+        headers=auth_headers,
+    )
+    assert blocked_resolve.status_code == 400
+
+
+def test_support_ticket_send_and_resolve(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    create_response = client.post(
+        "/api/v1/support-tickets",
+        json={
+            "subject": "Quick PTO question",
+            "description": "How do I request time off?",
+        },
+        headers=auth_headers,
+    )
+    assert create_response.status_code == 201
+    ticket_id = create_response.json()["id"]
+
+    message_response = client.post(
+        f"/api/v1/support-tickets/{ticket_id}/messages",
+        json={
+            "content": "Submit your request in the HR portal at least two weeks in advance.",
+            "role": "agent",
+            "resolve_ticket": True,
+        },
+        headers=auth_headers,
+    )
+    assert message_response.status_code == 201, message_response.text
+
+    ticket_response = client.get(
+        f"/api/v1/support-tickets/{ticket_id}",
+        headers=auth_headers,
+    )
+    assert ticket_response.status_code == 200
+    ticket = ticket_response.json()
+    assert ticket["status"] == "resolved"
+    assert ticket["resolved_message_id"] is not None
+    assert ticket["resolved_at"] is not None
+    assert ticket["has_resolution"] is True

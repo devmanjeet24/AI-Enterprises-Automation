@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, MessageSquare, User } from "lucide-react";
+import { ArrowRight, Filter, MessageSquare, User } from "lucide-react";
 import Link from "next/link";
 
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
@@ -88,9 +88,12 @@ interface SupportTicketCardGridProps {
 export function SupportTicketCardGrid({ tickets }: SupportTicketCardGridProps) {
   if (tickets.length === 0) {
     return (
-      <p className="py-8 text-center text-[13px] text-muted-foreground">
-        No tickets match this filter.
-      </p>
+      <div className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-white/[0.02] px-6 py-12 text-center">
+        <Filter className="size-6 text-tertiary" />
+        <p className="mt-3 text-[14px] text-muted-foreground">
+          No tickets match this filter.
+        </p>
+      </div>
     );
   }
 

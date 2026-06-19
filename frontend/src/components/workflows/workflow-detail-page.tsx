@@ -26,7 +26,6 @@ import { WorkflowDetailTabs, type WorkflowDetailTab } from "./workflow-detail-ta
 import { WorkflowExecutionHistory } from "./workflow-execution-history";
 import { WorkflowExecutionPanel } from "./workflow-execution-panel";
 import { WorkflowDetailSkeleton } from "./workflow-list-skeleton";
-import { WorkflowSchedulePanel } from "./workflow-schedule-panel";
 import { WorkflowSetupChecklist } from "./workflow-setup-checklist";
 import { WorkflowStatusBadge } from "./workflow-status-badge";
 import { WorkflowsAccessDenied } from "./workflows-access-denied";
@@ -245,9 +244,6 @@ export function WorkflowDetailPage({ workflowId }: WorkflowDetailPageProps) {
               />
             )}
           </>
-        )}
-        {activeTab === "schedule" && (
-          <WorkflowSchedulePanel workflow={workflow} />
         )}
       </div>
     </div>

@@ -54,7 +54,10 @@ class SupportTicketMessage(Base, TimestampMixin):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     is_internal: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    ticket: Mapped["SupportTicket"] = relationship(back_populates="messages")
+    ticket: Mapped["SupportTicket"] = relationship(
+        back_populates="messages",
+        foreign_keys=[ticket_id],
+    )
     author_user: Mapped["User | None"] = relationship(
         back_populates="support_ticket_messages",
     )

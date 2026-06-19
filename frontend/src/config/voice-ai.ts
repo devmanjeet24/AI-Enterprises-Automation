@@ -1,4 +1,4 @@
-import type { VoiceAgent, VoiceAnalytics } from "@/lib/voice-ai/types";
+import type { VoiceAgent, VoiceAnalytics, VoiceInputPhase, KnowledgeSourceCitation } from "@/lib/voice-ai/types";
 
 export function slugifyVoiceAgentName(name: string): string {
   return name
@@ -77,3 +77,37 @@ export const VOICE_SESSION_POLL_MS = 3000;
 
 export const ACCEPTED_AUDIO_TYPES =
   "audio/mpeg,audio/wav,audio/mp4,audio/webm,audio/ogg,.mp3,.wav,.m4a,.webm,.ogg";
+
+export const VOICE_INPUT_PHASE_LABELS: Record<VoiceInputPhase, string> = {
+  idle: "Ready",
+  recording: "Recording",
+  uploading: "Uploading",
+  processing: "Transcribing & responding",
+  failed: "Failed",
+};
+
+export function parseTranscriptSources(
+  metadata: Record<string, unknown> | null,
+): KnowledgeSourceCitation[] {
+  const raw = metadata?.sources;
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+    .map((item) => ({
+      document_title: String(item.document_title ?? "Document"),
+      page_number:
+        typeof item.page_number === "number"
+          ? item.page_number
+          : item.page_number == null
+            ? null
+            : Number(item.page_number),
+      similarity_score: Number(item.similarity_score ?? 0),
+    }));
+}
+
+export function hasTranscriptAudio(
+  metadata: Record<string, unknown> | null,
+): boolean {
+  return Boolean(metadata?.audio_file_path);
+}

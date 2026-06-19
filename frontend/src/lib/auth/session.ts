@@ -1,7 +1,27 @@
 import type { AppDispatch } from "@/store";
 import { getCurrentUser, login, register, type RegisterRequest } from "@/lib/api/auth";
+import {
+  DEFAULT_POST_LOGIN_PATH,
+  PROTECTED_PATHS,
+} from "@/lib/auth/constants";
 import { clearStoredToken, getStoredToken, setStoredToken } from "@/lib/auth/storage";
 import { clearAuth, setCredentials, setUser } from "@/store/slices/auth-slice";
+
+export function resolvePostLoginPath(from: string | null | undefined): string {
+  if (!from || !from.startsWith("/") || from.startsWith("//")) {
+    return DEFAULT_POST_LOGIN_PATH;
+  }
+
+  if (from === "/login" || from === "/register") {
+    return DEFAULT_POST_LOGIN_PATH;
+  }
+
+  const isProtectedRoute = PROTECTED_PATHS.some(
+    (path) => from === path || from.startsWith(`${path}/`),
+  );
+
+  return isProtectedRoute ? from : DEFAULT_POST_LOGIN_PATH;
+}
 
 export async function establishSession(
   dispatch: AppDispatch,

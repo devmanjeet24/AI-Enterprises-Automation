@@ -42,20 +42,25 @@ export function formatDateTime(iso: string | null): string {
 }
 
 export function filterUsersByStatus(users: User[], filter: UserStatusFilter): User[] {
-  if (filter === "all") return users;
-  if (filter === "active") return users.filter((user) => user.is_active);
-  return users.filter((user) => !user.is_active);
+  const safeUsers = Array.isArray(users) ? users : [];
+  if (filter === "all") return safeUsers;
+  if (filter === "active") return safeUsers.filter((user) => user.is_active);
+  return safeUsers.filter((user) => !user.is_active);
 }
 
 export function computeUsersStats(users: User[]) {
-  const active = users.filter((user) => user.is_active).length;
-  const inactive = users.length - active;
-  const admins = users.filter(
-    (user) => user.is_active && user.roles.some((role) => role.slug === "admin"),
+  const safeUsers = Array.isArray(users) ? users : [];
+  const active = safeUsers.filter((user) => user.is_active).length;
+  const inactive = safeUsers.length - active;
+  const admins = safeUsers.filter(
+    (user) =>
+      user.is_active &&
+      Array.isArray(user.roles) &&
+      user.roles.some((role) => role.slug === "admin"),
   ).length;
 
   return {
-    total: users.length,
+    total: safeUsers.length,
     active,
     inactive,
     admins,

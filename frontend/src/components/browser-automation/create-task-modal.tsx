@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { slugifyBrowserName } from "@/config/browser-automation";
 import { useCreateBrowserTask } from "@/hooks/use-browser-automation";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import type { BrowserProfile } from "@/lib/browser-automation/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
@@ -67,21 +67,25 @@ export function CreateTaskModal({ open, onClose, profiles }: CreateTaskModalProp
   };
 
   const handleCreate = async () => {
-    try {
-      const task = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slugifyBrowserName(name),
-        description: description.trim() || undefined,
-        browser_profile_id: browserProfileId,
-        target_url: targetUrl.trim() || undefined,
-        instructions: instructions.trim() || undefined,
-      });
-      toast.success(`"${task.name}" created as draft. Mark it ready before running.`);
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create browser task."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slugifyBrowserName(name),
+          description: description.trim() || undefined,
+          browser_profile_id: browserProfileId,
+          target_url: targetUrl.trim() || undefined,
+          instructions: instructions.trim() || undefined,
+        }),
+      toast,
+      successMessage: (task) =>
+        `Browser task "${task.name}" created successfully.`,
+      errorFallback: "Failed to create browser task.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   if (!open) return null;

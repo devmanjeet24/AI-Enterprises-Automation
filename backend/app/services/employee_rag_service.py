@@ -9,6 +9,7 @@ from app.config import Settings
 from app.schemas.knowledge_query import (
     NO_RELEVANT_INFORMATION_MESSAGE,
     KnowledgeSourceCitation,
+    is_no_relevant_information_answer,
 )
 from app.services.chroma_service import ChromaService
 from app.services.embedding_service import EmbeddingService
@@ -70,6 +71,8 @@ class EmployeeRAGService:
             system_prompt=f"{system_prompt.strip()}{EMPLOYEE_GROUNDING_SUFFIX}",
             history_messages=history_messages,
         )
+        if is_no_relevant_information_answer(answer):
+            return NO_RELEVANT_INFORMATION_MESSAGE, []
         return answer, build_citations(relevant_results)
 
 

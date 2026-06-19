@@ -7,6 +7,7 @@ import {
   GitBranch,
   Globe,
   LayoutDashboard,
+  MessageSquare,
   Network,
   Search,
   Users,
@@ -17,6 +18,8 @@ import { employeeStatusLabels } from "@/config/ai-employees";
 import { taskStatusLabels } from "@/config/agent-teams";
 import { researchStatusLabels, researchTemplateLabels } from "@/config/research-hub";
 import { executionStatusLabels, workflowStatusLabels } from "@/config/workflows";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { PermissionNavItem } from "@/lib/auth/nav-access";
 import type { BrowserAnalytics } from "@/lib/browser-automation/types";
 import type { DashboardOverview } from "@/lib/dashboard/types";
 import type { DashboardAccent } from "@/lib/dashboard-accents";
@@ -44,9 +47,10 @@ export type AnalyticsNavSectionId =
   | "workflows"
   | "research"
   | "browser-automation"
+  | "omnichannel"
   | "reports";
 
-export interface AnalyticsNavSection {
+export interface AnalyticsNavSection extends PermissionNavItem {
   id: AnalyticsNavSectionId;
   title: string;
   description: string;
@@ -62,6 +66,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Organization-wide KPIs and cross-module activity.",
     href: "/analytics",
     enabled: true,
+    readPermissions: [PERMISSIONS.ORGANIZATIONS_READ],
   },
   {
     id: "organization",
@@ -69,6 +74,11 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Users, departments, teams, and workspace structure.",
     href: "/analytics/organization",
     enabled: true,
+    readPermissions: [
+      PERMISSIONS.USERS_READ,
+      PERMISSIONS.DEPARTMENTS_READ,
+      PERMISSIONS.TEAMS_READ,
+    ],
   },
   {
     id: "knowledge",
@@ -76,6 +86,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Document corpus, ingestion, and query activity.",
     href: "/analytics/knowledge",
     enabled: true,
+    readPermissions: [PERMISSIONS.DOCUMENTS_READ],
   },
   {
     id: "ai-employees",
@@ -83,6 +94,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Agent roster, chat sessions, and utilization.",
     href: "/analytics/ai-employees",
     enabled: true,
+    readPermissions: [PERMISSIONS.EMPLOYEES_READ],
   },
   {
     id: "agent-teams",
@@ -90,6 +102,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Multi-agent task runs and team performance.",
     href: "/analytics/agent-teams",
     enabled: true,
+    readPermissions: [PERMISSIONS.AGENT_TEAMS_READ],
   },
   {
     id: "workflows",
@@ -97,6 +110,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Pipeline executions, success rates, and throughput.",
     href: "/analytics/workflows",
     enabled: true,
+    readPermissions: [PERMISSIONS.WORKFLOWS_READ],
   },
   {
     id: "research",
@@ -104,6 +118,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Research projects, reports, and run activity.",
     href: "/analytics/research",
     enabled: true,
+    readPermissions: [PERMISSIONS.RESEARCH_PROJECTS_READ],
   },
   {
     id: "browser-automation",
@@ -111,6 +126,18 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Profiles, tasks, and execution metrics.",
     href: "/analytics/browser-automation",
     enabled: true,
+    readPermissions: [
+      PERMISSIONS.BROWSER_PROFILES_READ,
+      PERMISSIONS.BROWSER_TASKS_READ,
+    ],
+  },
+  {
+    id: "omnichannel",
+    title: "Omnichannel",
+    description: "Conversation volume, channels, handoffs, and message roles.",
+    href: "/analytics/omnichannel",
+    enabled: true,
+    readPermissions: [PERMISSIONS.OMNICHANNEL_CHANNELS_READ],
   },
   {
     id: "reports",
@@ -118,6 +145,7 @@ export const analyticsNavSections: AnalyticsNavSection[] = [
     description: "Research report outcomes and export activity.",
     href: "/analytics/reports",
     enabled: true,
+    readPermissions: [PERMISSIONS.RESEARCH_PROJECTS_READ],
   },
 ];
 
@@ -130,6 +158,7 @@ export const analyticsNavIcons: Record<AnalyticsNavSectionId, LucideIcon> = {
   workflows: GitBranch,
   research: Search,
   "browser-automation": Globe,
+  omnichannel: MessageSquare,
   reports: FileText,
 };
 
@@ -142,6 +171,7 @@ export const analyticsNavAccents: Record<AnalyticsNavSectionId, DashboardAccent>
   workflows: "purple",
   research: "purple",
   "browser-automation": "blue",
+  omnichannel: "purple",
   reports: "gold",
 };
 
@@ -198,36 +228,56 @@ export function buildExecutivePlatformMetrics(
 ): AnalyticsChartSegment[] {
   if (!overview) return [];
 
+  const metric = (value: number | undefined) => value ?? 0;
+
   return [
     {
       key: "documents",
       label: "Documents",
-      value: overview.total_documents,
+      value: metric(overview.total_documents),
       accent: "purple",
     },
     {
       key: "agent-tasks",
       label: "Agent Tasks",
-      value: overview.total_agent_tasks,
+      value: metric(overview.total_agent_tasks),
       accent: "blue",
     },
     {
       key: "workflows",
       label: "Workflows",
-      value: overview.total_workflows,
+      value: metric(overview.total_workflows),
       accent: "purple",
     },
     {
       key: "research",
       label: "Research Projects",
-      value: overview.total_research_projects,
+      value: metric(overview.total_research_projects),
       accent: "gold",
     },
     {
       key: "browser",
       label: "Browser Tasks",
-      value: overview.total_browser_tasks,
+      value: metric(overview.total_browser_tasks),
       accent: "blue",
+    },
+    {
+      key: "support",
+      label: "Support Tickets",
+      value: metric(overview.total_support_tickets),
+      accent: "emerald",
+    },
+    {
+      key: "voice",
+      label: "Voice Sessions",
+      value: metric(overview.total_voice_sessions),
+      accent: "blue",
+    },
+    {
+      key: "omnichannel",
+      label: "Omnichannel",
+      value: metric(overview.total_omnichannel_conversations),
+      accent: "purple",
     },
   ];
 }

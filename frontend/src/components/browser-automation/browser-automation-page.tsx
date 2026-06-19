@@ -103,7 +103,11 @@ export function BrowserAutomationPage() {
 
   const tasksAccessDenied = isTasksError && isAccessDeniedError(tasksError);
   const profilesAccessDenied = isProfilesError && isAccessDeniedError(profilesError);
-  const accessDenied = tasksAccessDenied || profilesAccessDenied;
+  const canReadProfiles = hasPermission(permissions, PERMISSIONS.BROWSER_PROFILES_READ);
+  const canReadTasks = hasPermission(permissions, PERMISSIONS.BROWSER_TASKS_READ);
+  const fullAccessDenied =
+    (!canReadProfiles && !canReadTasks) ||
+    (tasksAccessDenied && profilesAccessDenied);
 
   const analyticsErrorMessage = isAnalyticsError
     ? getApiErrorMessage(analyticsError, "Failed to load browser analytics.")
@@ -125,7 +129,7 @@ export function BrowserAutomationPage() {
     );
   }
 
-  if (accessDenied) {
+  if (fullAccessDenied) {
     return (
       <div className="px-6 py-8 md:px-8">
         <BrowserAutomationAccessDenied />
@@ -183,6 +187,8 @@ export function BrowserAutomationPage() {
 
           {isLoadingProfiles ? (
             <BrowserProfileCardSkeleton />
+          ) : profilesAccessDenied ? (
+            <BrowserAutomationAccessDenied />
           ) : isProfilesError ? (
             <BrowserAutomationError
               title="Failed to load browser profiles"
@@ -240,6 +246,8 @@ export function BrowserAutomationPage() {
 
           {isLoadingTasks ? (
             <BrowserTaskCardGridSkeleton />
+          ) : tasksAccessDenied ? (
+            <BrowserAutomationAccessDenied />
           ) : isTasksError ? (
             <BrowserAutomationError
               title="Failed to load browser tasks"

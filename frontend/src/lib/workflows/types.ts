@@ -66,12 +66,6 @@ export interface AssignableAgentTeam {
   member_count: number;
 }
 
-export interface WorkflowScheduleDraft {
-  enabled: boolean;
-  cron_expression: string;
-  timezone: string;
-}
-
 export interface CreateWorkflowInput {
   name: string;
   slug?: string;

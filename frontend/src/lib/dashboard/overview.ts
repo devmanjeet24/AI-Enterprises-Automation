@@ -72,6 +72,9 @@ export const overviewKpiPlaceholders: OverviewKpiItem[] = [
   { label: "Workflows", value: "—", change: "Automation pipelines", trend: "neutral", accent: "purple" },
   { label: "Research Projects", value: "—", change: "Research hub", trend: "neutral", accent: "gold" },
   { label: "Browser Tasks", value: "—", change: "Browser automation", trend: "neutral", accent: "gold" },
+  { label: "Support Tickets", value: "—", change: "Customer support", trend: "neutral", accent: "emerald" },
+  { label: "Voice Sessions", value: "—", change: "Voice AI", trend: "neutral", accent: "blue" },
+  { label: "Omnichannel", value: "—", change: "Conversations", trend: "neutral", accent: "purple" },
 ];
 
 export function buildOverviewKpis(overview: DashboardOverview): OverviewKpiItem[] {
@@ -124,6 +127,27 @@ export function buildOverviewKpis(overview: DashboardOverview): OverviewKpiItem[
       change: "Browser automation",
       trend: "neutral",
       accent: "gold",
+    },
+    {
+      label: "Support Tickets",
+      value: formatCount(overview.total_support_tickets),
+      change: "Customer support",
+      trend: "neutral",
+      accent: "emerald",
+    },
+    {
+      label: "Voice Sessions",
+      value: formatCount(overview.total_voice_sessions),
+      change: "Voice AI",
+      trend: "neutral",
+      accent: "blue",
+    },
+    {
+      label: "Omnichannel",
+      value: formatCount(overview.total_omnichannel_conversations),
+      change: "Conversations",
+      trend: "neutral",
+      accent: "purple",
     },
   ];
 }

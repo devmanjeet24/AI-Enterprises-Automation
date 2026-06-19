@@ -1,22 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Loader2, Mic, Upload } from "lucide-react";
+import { ArrowLeft, Loader2, MessageSquarePlus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { formatDateTime } from "@/config/voice-ai";
 import {
   useCreateVoiceSession,
+  useDeleteVoiceSession,
   useVoiceAgent,
   useVoiceSessions,
 } from "@/hooks/use-voice-ai";
-import { useUserPermissions } from "@/hooks/use-auth-token";
+import { useAuthUser, useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { ApiError } from "@/lib/api/client";
-import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
+import {
+  PERMISSIONS,
+  canDeleteVoiceSessions,
+  canSendVoiceMessages,
+  hasPermission,
+} from "@/lib/auth/permissions";
 import { isAccessDeniedError } from "@/lib/voice-ai/access";
 import { useToast } from "@/providers/toast-provider";
 import { notFound } from "next/navigation";
@@ -33,12 +39,14 @@ interface VoiceAiDetailPageProps {
 export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
   const router = useRouter();
   const toast = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
 
+  const user = useAuthUser();
   const permissions = useUserPermissions();
-  const canExecute = hasPermission(permissions, PERMISSIONS.VOICE_SESSIONS_EXECUTE);
+  const canExecute = canSendVoiceMessages(permissions, user?.roles);
   const canWrite = hasPermission(permissions, PERMISSIONS.VOICE_SESSIONS_WRITE);
+  const canDelete = canDeleteVoiceSessions(permissions, user?.roles);
 
   const {
     data: agent,
@@ -54,6 +62,7 @@ export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
   } = useVoiceSessions({ voice_agent_id: agentId });
 
   const createSessionMutation = useCreateVoiceSession();
+  const deleteSessionMutation = useDeleteVoiceSession();
 
   if (isLoading) {
     return <VoiceAiDetailSkeleton />;
@@ -92,14 +101,38 @@ export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
     try {
       const session = await createSessionMutation.mutateAsync({
         voice_agent_id: agent.id,
-        title: `Session ${new Date().toLocaleString()}`,
+        title: `Conversation ${new Date().toLocaleString()}`,
       });
-      toast.success("Session created");
+      toast.success("Conversation started.");
       router.push(`/voice-ai/sessions/${session.id}`);
     } catch (createError) {
       toast.error(getApiErrorMessage(createError, "Failed to create session."));
     } finally {
       setIsCreatingSession(false);
+    }
+  };
+
+  const handleDeleteSession = async (
+    sessionId: string,
+    title: string | null | undefined,
+  ) => {
+    const label = title ?? "this conversation";
+    if (
+      !window.confirm(
+        `Delete "${label}" permanently? This removes all transcripts and audio.`,
+      )
+    ) {
+      return;
+    }
+
+    setDeletingSessionId(sessionId);
+    try {
+      await deleteSessionMutation.mutateAsync(sessionId);
+      toast.success("Conversation deleted.");
+    } catch (deleteError) {
+      toast.error(getApiErrorMessage(deleteError, "Failed to delete conversation."));
+    } finally {
+      setDeletingSessionId(null);
     }
   };
 
@@ -111,7 +144,7 @@ export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
           className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
-          Back to voice agents
+          Back to voice assistants
         </Link>
         <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -138,9 +171,9 @@ export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
               {isCreatingSession ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (
-                <Upload className="size-3.5" />
+                <MessageSquarePlus className="size-3.5" />
               )}
-              New session
+              Start conversation
             </Button>
           )}
         </div>
@@ -176,13 +209,13 @@ export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
           </dl>
           {!canExecute && (
             <p className="mt-4 text-[12px] text-muted-foreground">
-              You need execute permission to upload audio and run transcription.
+              You need execute permission to record or send voice messages.
             </p>
           )}
         </DashboardCard>
 
         <div className="md:col-span-2">
-          <h3 className="mb-4 text-[14px] font-medium text-foreground">Session history</h3>
+          <h3 className="mb-4 text-[14px] font-medium text-foreground">Conversations</h3>
           {isLoadingSessions ? (
             <DashboardCard variant="panel" className="flex items-center justify-center gap-2 p-8">
               <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -190,39 +223,72 @@ export function VoiceAiDetailPage({ agentId }: VoiceAiDetailPageProps) {
             </DashboardCard>
           ) : sessions.length === 0 ? (
             <DashboardCard variant="panel" accent="emerald" className="flex flex-col items-center p-10 text-center">
-              <Mic className="size-8 text-tertiary" />
-              <h4 className="mt-4 text-[15px] font-medium text-foreground">No sessions yet</h4>
+              <MessageSquarePlus className="size-8 text-tertiary" />
+              <h4 className="mt-4 text-[15px] font-medium text-foreground">No conversations yet</h4>
               <p className="mt-2 max-w-sm text-[13px] text-muted-foreground">
-                Start a new session and upload an audio file to transcribe and get an AI response.
+                Start a conversation and record or upload voice messages to talk with
+                your AI employee.
               </p>
             </DashboardCard>
           ) : (
             <div className="space-y-3">
               {sessions.map((session) => (
-                <Link key={session.id} href={`/voice-ai/sessions/${session.id}`}>
-                  <DashboardCard variant="default" accent="emerald" className="p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-[14px] font-medium text-foreground">
-                          {session.title ?? "Untitled session"}
-                        </p>
-                        <p className="mt-1 text-[12px] text-muted-foreground">
-                          {session.transcript_count} transcript
-                          {session.transcript_count === 1 ? "" : "s"} ·{" "}
-                          {formatDateTime(session.created_at)}
-                        </p>
-                      </div>
+                <DashboardCard
+                  key={session.id}
+                  variant="default"
+                  accent="emerald"
+                  className="p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <Link
+                      href={`/voice-ai/sessions/${session.id}`}
+                      className="min-w-0 flex-1"
+                    >
+                      <p className="truncate text-[14px] font-medium text-foreground">
+                        {session.title ?? "Untitled session"}
+                      </p>
+                      <p className="mt-1 text-[12px] text-muted-foreground">
+                        {session.transcript_count} transcript
+                        {session.transcript_count === 1 ? "" : "s"} ·{" "}
+                        {formatDateTime(session.created_at)}
+                      </p>
+                    </Link>
+                    <div className="flex shrink-0 items-center gap-2">
                       <VoiceSessionStatusBadge status={session.status} />
+                      {canDelete && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-red-300"
+                          disabled={
+                            session.status === "processing" ||
+                            deletingSessionId === session.id
+                          }
+                          title={
+                            session.status === "processing"
+                              ? "Cannot delete while processing"
+                              : "Delete conversation"
+                          }
+                          onClick={() =>
+                            void handleDeleteSession(session.id, session.title)
+                          }
+                        >
+                          {deletingSessionId === session.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
+                      )}
                     </div>
-                  </DashboardCard>
-                </Link>
+                  </div>
+                </DashboardCard>
               ))}
             </div>
           )}
         </div>
       </div>
-
-      <input ref={fileInputRef} type="file" className="hidden" />
     </div>
   );
 }

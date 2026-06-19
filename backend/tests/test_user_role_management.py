@@ -1,6 +1,7 @@
 """API tests for user and role management endpoints."""
 
 import uuid
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from fastapi.testclient import TestClient
@@ -107,6 +108,81 @@ def test_admin_can_update_user(client: TestClient, org_users: dict) -> None:
     body = response.json()
     assert body["first_name"] == "Updated"
     assert body["last_name"] == "Member"
+
+
+def test_admin_can_create_user(client: TestClient, org_users: dict) -> None:
+    unique = org_users["unique"]
+    response = client.post(
+        "/api/v1/users",
+        json={
+            "email": f"created.{unique}@example.com",
+            "password": "securepass123",
+            "first_name": "Created",
+            "last_name": "User",
+        },
+        headers=org_users["admin"],
+    )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["email"] == f"created.{unique}@example.com"
+    assert body["is_active"] is True
+    assert body["roles"][0]["slug"] == "member"
+
+    login_response = client.post(
+        "/api/v1/auth/login/json",
+        json={"email": f"created.{unique}@example.com", "password": "securepass123"},
+    )
+    assert login_response.status_code == 200
+    assert login_response.json()["access_token"]
+
+
+def test_admin_can_invite_resend_and_user_accepts(client: TestClient, org_users: dict) -> None:
+    unique = org_users["unique"]
+    email = f"invited.{unique}@example.com"
+
+    invite_response = client.post(
+        "/api/v1/users/invitations",
+        json={
+            "email": email,
+            "first_name": "Invited",
+            "last_name": "User",
+        },
+        headers=org_users["admin"],
+    )
+    assert invite_response.status_code == 201, invite_response.text
+    invite = invite_response.json()
+    assert invite["email"] == email
+    assert invite["accepted_at"] is None
+    assert invite["invite_url"]
+
+    list_response = client.get("/api/v1/users/invitations", headers=org_users["admin"])
+    assert list_response.status_code == 200
+    assert any(item["id"] == invite["id"] for item in list_response.json())
+
+    resend_response = client.post(
+        f"/api/v1/users/invitations/{invite['id']}/resend",
+        headers=org_users["admin"],
+    )
+    assert resend_response.status_code == 200, resend_response.text
+    token = parse_qs(urlparse(resend_response.json()["invite_url"]).query)["token"][0]
+
+    accept_response = client.post(
+        "/api/v1/users/invitations/accept",
+        json={"token": token, "password": "securepass123"},
+    )
+    assert accept_response.status_code == 200, accept_response.text
+    invited_headers = {"Authorization": f"Bearer {accept_response.json()['access_token']}"}
+
+    invited_me = client.get("/api/v1/auth/me", headers=invited_headers).json()
+    admin_me = client.get("/api/v1/auth/me", headers=org_users["admin"]).json()
+    assert invited_me["email"] == email
+    assert invited_me["organization_id"] == admin_me["organization_id"]
+    assert invited_me["roles"][0]["slug"] == "member"
+
+    invitations = client.get("/api/v1/users/invitations", headers=org_users["admin"]).json()
+    accepted_invitation = next(item for item in invitations if item["id"] == invite["id"])
+    assert accepted_invitation["accepted_at"] is not None
 
 
 def test_admin_can_deactivate_user(client: TestClient, org_users: dict) -> None:

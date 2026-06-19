@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreatePermission } from "@/hooks/use-permissions";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import {
   normalizePermissionSlug,
   validatePermissionSlug,
@@ -64,18 +64,22 @@ export function CreatePermissionModal({ open, onClose }: CreatePermissionModalPr
       return;
     }
 
-    try {
-      const permission = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: normalizePermissionSlug(slug),
-        description: description.trim() || undefined,
-      });
-      toast.success(`"${permission.name}" permission created.`);
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create permission."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: normalizePermissionSlug(slug),
+          description: description.trim() || undefined,
+        }),
+      toast,
+      successMessage: (permission) =>
+        `Permission "${permission.name}" created successfully.`,
+      errorFallback: "Failed to create permission.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   if (!open) return null;

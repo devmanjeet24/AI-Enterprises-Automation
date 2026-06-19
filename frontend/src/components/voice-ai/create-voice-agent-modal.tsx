@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { slugifyVoiceAgentName } from "@/config/voice-ai";
 import { useEmployees } from "@/hooks/use-ai-employees";
 import { useCreateVoiceAgent } from "@/hooks/use-voice-ai";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { useToast } from "@/providers/toast-provider";
 
 interface CreateVoiceAgentModalProps {
@@ -58,20 +58,23 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
   const handleCreate = async () => {
     if (!name.trim() || !aiEmployeeId) return;
 
-    try {
-      const agent = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slugifyVoiceAgentName(name),
-        description: description.trim() || undefined,
-        ai_employee_id: aiEmployeeId,
-      });
-      toast.success("Voice agent created");
-      resetForm();
-      onClose();
-      router.push(`/voice-ai/${agent.id}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create voice agent."));
-    }
+    await runMutationWithFeedback({
+      action: () =>
+        createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slugifyVoiceAgentName(name),
+          description: description.trim() || undefined,
+          ai_employee_id: aiEmployeeId,
+        }),
+      toast,
+      successMessage: "Voice assistant created successfully.",
+      errorFallback: "Failed to create voice assistant.",
+      onSuccess: (agent) => {
+        resetForm();
+        onClose();
+        router.push(`/voice-ai/${agent.id}`);
+      },
+    });
   };
 
   return (
@@ -84,7 +87,7 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
       />
       <div className="relative w-full max-w-lg rounded-xl border border-white/[0.08] bg-background p-6 shadow-2xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-[16px] font-medium text-foreground">Create voice agent</h2>
+          <h2 className="text-[16px] font-medium text-foreground">Create voice assistant</h2>
           <button
             type="button"
             onClick={handleClose}
@@ -94,7 +97,7 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
           </button>
         </div>
         <p className="mt-2 text-[13px] text-muted-foreground">
-          Link an active AI employee to power voice transcription and responses.
+          Link an active AI employee to power voice conversations and responses.
         </p>
 
         <div className="mt-6 space-y-4">
@@ -151,7 +154,7 @@ export function CreateVoiceAgentModal({ open, onClose }: CreateVoiceAgentModalPr
             ) : (
               <Plus className="size-3.5" />
             )}
-            Create agent
+            Create assistant
           </Button>
         </div>
       </div>

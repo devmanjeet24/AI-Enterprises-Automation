@@ -106,3 +106,7 @@ export function getBrowserExecution(
     { method: "GET", token },
   );
 }
+
+export function getBrowserExecutionScreenshotUrl(executionId: string): string {
+  return `${BROWSER_TASKS_BASE}/executions/${executionId}/screenshot`;
+}

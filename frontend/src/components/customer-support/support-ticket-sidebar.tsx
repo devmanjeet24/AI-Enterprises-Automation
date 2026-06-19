@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import {
   supportPriorityLabels,
   supportStatusLabels,
+  formatDateTime,
 } from "@/config/customer-support";
 import { useEmployees } from "@/hooks/use-ai-employees";
 import {
@@ -57,8 +58,16 @@ export function SupportTicketSidebar({
   );
 
   const isSaving = updateMutation.isPending;
+  const canSelectResolved = ticket.has_resolution || ticket.status === "resolved";
 
   const handleSave = async () => {
+    if (status === "resolved" && !canSelectResolved) {
+      toast.error(
+        "Send a public agent or AI reply before resolving this ticket.",
+      );
+      return;
+    }
+
     try {
       await updateMutation.mutateAsync({
         status,
@@ -67,7 +76,7 @@ export function SupportTicketSidebar({
         assigned_user_id: assignedUserId || null,
         assigned_ai_employee_id: assignedEmployeeId || null,
       });
-      toast.success("Ticket updated");
+      toast.success("Ticket updated.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to update ticket."));
     }
@@ -78,7 +87,7 @@ export function SupportTicketSidebar({
 
     try {
       await deleteMutation.mutateAsync(ticket.id);
-      toast.success("Ticket deleted");
+      toast.success("Ticket deleted.");
       router.push("/customer-support");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to delete ticket."));
@@ -103,11 +112,26 @@ export function SupportTicketSidebar({
             className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[13px] text-foreground outline-none disabled:opacity-50"
           >
             {Object.entries(supportStatusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
+              <option
+                key={value}
+                value={value}
+                disabled={value === "resolved" && !canSelectResolved}
+              >
                 {label}
+                {value === "resolved" && !canSelectResolved ? " (reply required)" : ""}
               </option>
             ))}
           </select>
+          {!canSelectResolved && ticket.status !== "resolved" && (
+            <p className="mt-1.5 text-[11px] text-amber-400">
+              Resolve is available after a public agent or AI employee reply is sent.
+            </p>
+          )}
+          {ticket.resolved_at && (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Resolved {formatDateTime(ticket.resolved_at)}
+            </p>
+          )}
         </div>
 
         <div>

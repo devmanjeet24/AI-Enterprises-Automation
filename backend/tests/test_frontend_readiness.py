@@ -90,7 +90,7 @@ def test_get_organization_me(client: TestClient) -> None:
     assert "slug" in body
 
 
-def test_patch_organization_me_requires_admin(client: TestClient) -> None:
+def test_patch_organization_me_requires_write_permission(client: TestClient) -> None:
     unique = uuid.uuid4().hex[:8]
     org_slug = f"member-org-{unique}"
 
@@ -117,6 +117,7 @@ def test_patch_organization_me_requires_admin(client: TestClient) -> None:
         headers=member_headers,
     )
     assert forbidden.status_code == 403
+    assert "organizations:write" in forbidden.text
 
     allowed = client.patch(
         "/api/v1/organizations/me",
@@ -149,3 +150,6 @@ def test_dashboard_overview_returns_counts(client: TestClient) -> None:
     assert body["total_workflows"] == 0
     assert body["total_research_projects"] == 0
     assert body["total_browser_tasks"] == 0
+    assert body["total_support_tickets"] == 0
+    assert body["total_voice_sessions"] == 0
+    assert body["total_omnichannel_conversations"] == 0

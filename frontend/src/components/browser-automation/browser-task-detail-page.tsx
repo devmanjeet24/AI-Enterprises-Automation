@@ -12,6 +12,10 @@ import { ApiError } from "@/lib/api/client";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { isAccessDeniedError } from "@/lib/browser-automation/access";
+import type {
+  BrowserTaskExecution,
+  BrowserTaskExecutionSummary,
+} from "@/lib/browser-automation/types";
 
 import { BrowserAutomationAccessDenied } from "./browser-automation-access-denied";
 import { BrowserAutomationError } from "./browser-automation-error";
@@ -32,6 +36,8 @@ interface BrowserTaskDetailPageProps {
 
 export function BrowserTaskDetailPage({ taskId }: BrowserTaskDetailPageProps) {
   const [activeTab, setActiveTab] = useState<BrowserTaskDetailTab>("overview");
+  const [autoOpenExecution, setAutoOpenExecution] =
+    useState<BrowserTaskExecutionSummary | null>(null);
   const runPanelRef = useRef<HTMLDivElement>(null);
   const permissions = useUserPermissions();
 
@@ -62,9 +68,26 @@ export function BrowserTaskDetailPage({ taskId }: BrowserTaskDetailPageProps) {
     });
   };
 
-  const handleRunSuccess = () => {
+  const handleRunComplete = (execution: BrowserTaskExecution) => {
     void refetchExecutions();
     void refetchTask();
+    setActiveTab("history");
+    const metadata = execution.execution_metadata ?? {};
+    setAutoOpenExecution({
+      id: execution.id,
+      organization_id: execution.organization_id,
+      browser_task_id: execution.browser_task_id,
+      browser_profile_id: execution.browser_profile_id,
+      status: execution.status,
+      error_message: execution.error_message,
+      started_at: execution.started_at,
+      completed_at: execution.completed_at,
+      created_at: execution.created_at,
+      steps_completed:
+        typeof metadata.steps_completed === "number" ? metadata.steps_completed : null,
+      steps_total: typeof metadata.steps_total === "number" ? metadata.steps_total : null,
+      has_failure_screenshot: Boolean(metadata.has_failure_screenshot),
+    });
   };
 
   if (isTaskLoading) {
@@ -132,7 +155,7 @@ export function BrowserTaskDetailPage({ taskId }: BrowserTaskDetailPageProps) {
                 task={task}
                 canExecute={canExecute}
                 canWrite={canWrite}
-                onRunSuccess={handleRunSuccess}
+                onRunComplete={handleRunComplete}
               />
             </div>
             <BrowserTaskConfigPanel task={task} canWrite={canWrite} />
@@ -146,6 +169,8 @@ export function BrowserTaskDetailPage({ taskId }: BrowserTaskDetailPageProps) {
             isError={isExecutionsError}
             errorMessage={executionsErrorMessage}
             onRetry={() => refetchExecutions()}
+            autoOpenExecution={autoOpenExecution}
+            onAutoOpenHandled={() => setAutoOpenExecution(null)}
           />
         )}
       </div>

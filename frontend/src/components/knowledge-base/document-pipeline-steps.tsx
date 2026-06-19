@@ -93,7 +93,9 @@ export function DocumentPipelineSteps({
         Processing pipeline
       </p>
       <p className="mt-1 text-[14px] text-muted-foreground">
-        Documents must complete all steps before assignment to AI Employees.
+        Documents must complete all steps before assignment to AI Employees. Use{" "}
+        <span className="font-medium text-foreground">Pipeline actions</span> below to
+        run each step manually.
       </p>
 
       <div className="mt-6 flex flex-col gap-0 sm:flex-row sm:items-start sm:justify-between">

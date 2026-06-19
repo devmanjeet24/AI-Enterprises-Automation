@@ -1,4 +1,6 @@
 export const PERMISSIONS = {
+  ORGANIZATIONS_READ: "organizations:read",
+  ORGANIZATIONS_WRITE: "organizations:write",
   DEPARTMENTS_READ: "departments:read",
   DEPARTMENTS_WRITE: "departments:write",
   DEPARTMENTS_DELETE: "departments:delete",
@@ -69,4 +71,50 @@ export function hasPermission(
   slug: string,
 ): boolean {
   return permissions?.includes(slug) ?? false;
+}
+
+/** Upload/record in a voice session — write or execute permission is sufficient. */
+export function canSendVoiceMessages(
+  permissions: string[] | undefined,
+  roles?: ReadonlyArray<{ slug: string }>,
+): boolean {
+  if (
+    hasPermission(permissions, PERMISSIONS.VOICE_SESSIONS_EXECUTE) ||
+    hasPermission(permissions, PERMISSIONS.VOICE_SESSIONS_WRITE)
+  ) {
+    return true;
+  }
+
+  // Fallback when JWT /me permissions are stale after migrations (admin/manager only).
+  return (
+    roles?.some((role) => role.slug === "admin" || role.slug === "manager") ?? false
+  );
+}
+
+/** Delete an omnichannel conversation — delete permission or admin/manager. */
+export function canDeleteOmnichannelConversations(
+  permissions: string[] | undefined,
+  roles?: ReadonlyArray<{ slug: string }>,
+): boolean {
+  if (hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CONVERSATIONS_DELETE)) {
+    return true;
+  }
+
+  return (
+    roles?.some((role) => role.slug === "admin" || role.slug === "manager") ?? false
+  );
+}
+
+/** Delete a voice conversation — delete permission or admin/manager. */
+export function canDeleteVoiceSessions(
+  permissions: string[] | undefined,
+  roles?: ReadonlyArray<{ slug: string }>,
+): boolean {
+  if (hasPermission(permissions, PERMISSIONS.VOICE_SESSIONS_DELETE)) {
+    return true;
+  }
+
+  return (
+    roles?.some((role) => role.slug === "admin" || role.slug === "manager") ?? false
+  );
 }

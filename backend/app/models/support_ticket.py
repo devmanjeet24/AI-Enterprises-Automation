@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -89,6 +90,20 @@ class SupportTicket(Base, TimestampMixin):
         default=SupportTicketPriority.NORMAL,
         index=True,
     )
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    resolved_message_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("support_ticket_messages.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    reopened_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     organization: Mapped["Organization"] = relationship(back_populates="support_tickets")
     category: Mapped["SupportTicketCategory | None"] = relationship(back_populates="tickets")
@@ -107,4 +122,10 @@ class SupportTicket(Base, TimestampMixin):
         back_populates="ticket",
         cascade="all, delete-orphan",
         order_by="SupportTicketMessage.created_at",
+        foreign_keys="SupportTicketMessage.ticket_id",
+    )
+    resolved_message: Mapped["SupportTicketMessage | None"] = relationship(
+        foreign_keys=[resolved_message_id],
+        uselist=False,
+        viewonly=True,
     )

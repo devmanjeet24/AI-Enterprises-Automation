@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { slugifyBrowserName } from "@/config/browser-automation";
 import { useCreateBrowserProfile } from "@/hooks/use-browser-automation";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { runMutationWithFeedback } from "@/lib/mutation-feedback";
 import { dashboardAccents } from "@/lib/dashboard-accents";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
@@ -57,24 +57,28 @@ export function CreateProfileModal({ open, onClose }: CreateProfileModalProps) {
   };
 
   const handleCreate = async () => {
-    const width = parseInt(viewportWidth, 10);
-    const height = parseInt(viewportHeight, 10);
-
-    try {
-      const profile = await createMutation.mutateAsync({
-        name: name.trim(),
-        slug: slugifyBrowserName(name),
-        description: description.trim() || undefined,
-        user_agent: userAgent.trim() || undefined,
-        viewport_width: Number.isFinite(width) ? width : undefined,
-        viewport_height: Number.isFinite(height) ? height : undefined,
-      });
-      toast.success(`"${profile.name}" profile created.`);
-      resetForm();
-      onClose();
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create browser profile."));
-    }
+    await runMutationWithFeedback({
+      action: () => {
+        const width = parseInt(viewportWidth, 10);
+        const height = parseInt(viewportHeight, 10);
+        return createMutation.mutateAsync({
+          name: name.trim(),
+          slug: slugifyBrowserName(name),
+          description: description.trim() || undefined,
+          user_agent: userAgent.trim() || undefined,
+          viewport_width: Number.isFinite(width) ? width : undefined,
+          viewport_height: Number.isFinite(height) ? height : undefined,
+        });
+      },
+      toast,
+      successMessage: (profile) =>
+        `Browser profile "${profile.name}" created successfully.`,
+      errorFallback: "Failed to create browser profile.",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+      },
+    });
   };
 
   if (!open) return null;

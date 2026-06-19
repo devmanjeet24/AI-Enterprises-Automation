@@ -11,7 +11,11 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.models.ai_employee import AIEmployee
 from app.models.enums import AIEmployeeStatus
-from app.schemas.knowledge_query import NO_RELEVANT_INFORMATION_MESSAGE, KnowledgeSourceCitation
+from app.schemas.knowledge_query import (
+    NO_RELEVANT_INFORMATION_MESSAGE,
+    KnowledgeSourceCitation,
+    is_no_relevant_information_answer,
+)
 from app.services.ai_employee_service import list_knowledge_assignments, list_tool_assignments
 from app.services.chroma_service import ChromaService
 from app.services.embedding_service import EmbeddingService
@@ -101,7 +105,7 @@ def execute_employee_step(
             conversation_history=conversation_history or None,
         )
         used_rag = True
-        if answer == NO_RELEVANT_INFORMATION_MESSAGE:
+        if is_no_relevant_information_answer(answer):
             answer = _generate_without_retrieval(
                 employee_rag_service=employee_rag_service,
                 system_prompt=system_prompt,

@@ -18,6 +18,7 @@ from app.models.support_ticket_message import SupportTicketMessage
 from app.models.voice_agent import VoiceAgent
 from app.models.voice_session import VoiceSession
 from app.models.voice_transcript import VoiceTranscript
+from app.models.omnichannel_audit_log import OmnichannelAuditLog
 from app.models.omnichannel_channel import OmnichannelChannel
 from app.models.omnichannel_conversation import OmnichannelConversation
 from app.models.omnichannel_message import OmnichannelMessage
@@ -29,6 +30,7 @@ from app.models.enums import (
     BrowserTaskStatus,
     DocumentStatus,
     MessageRole,
+    OmnichannelAuditAction,
     OmnichannelChannelType,
     OmnichannelConversationStatus,
     OmnichannelHandoffStatus,
@@ -54,6 +56,7 @@ from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.team import Team
 from app.models.user import User
+from app.models.user_invitation import UserInvitation
 from app.models.user_role import UserRole
 
 __all__ = [
@@ -79,6 +82,8 @@ __all__ = [
     "DocumentChunk",
     "DocumentStatus",
     "KnowledgeDocument",
+    "OmnichannelAuditLog",
+    "OmnichannelAuditAction",
     "OmnichannelChannel",
     "OmnichannelChannelType",
     "OmnichannelConversation",
@@ -102,6 +107,7 @@ __all__ = [
     "SupportTicketStatus",
     "Team",
     "User",
+    "UserInvitation",
     "UserRole",
     "VoiceAgent",
     "VoiceSession",

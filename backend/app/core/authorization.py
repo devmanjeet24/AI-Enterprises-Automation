@@ -52,6 +52,25 @@ def require_permission(permission_slug: str) -> Callable[..., User]:
     return dependency
 
 
+def require_any_permission(*permission_slugs: str) -> Callable[..., User]:
+    """Return a dependency that enforces at least one permission slug."""
+
+    def dependency(
+        current_user: Annotated[User, Depends(get_current_user)],
+        db: Annotated[Session, Depends(get_db)],
+    ) -> User:
+        granted = get_user_permission_slugs(db, current_user)
+        if not any(slug in granted for slug in permission_slugs):
+            joined = "', '".join(permission_slugs)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"One of '{joined}' permissions required",
+            )
+        return current_user
+
+    return dependency
+
+
 def load_user_with_permissions(
     db: Session,
     user: User,

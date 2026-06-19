@@ -1,9 +1,11 @@
 """Omnichannel conversation, message, and inbox endpoints."""
 
 import uuid
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -15,7 +17,11 @@ from app.core.permissions import (
     OMNICHANNEL_CONVERSATIONS_READ,
     OMNICHANNEL_CONVERSATIONS_WRITE,
 )
-from app.models.enums import OmnichannelChannelType, OmnichannelConversationStatus
+from app.models.enums import (
+    OmnichannelChannelType,
+    OmnichannelConversationStatus,
+    OmnichannelInboxView,
+)
 from app.models.user import User
 from app.schemas.omnichannel_conversation import (
     OmnichannelAiSuggestionResponse,
@@ -23,6 +29,8 @@ from app.schemas.omnichannel_conversation import (
     OmnichannelConversationDetailResponse,
     OmnichannelConversationResponse,
     OmnichannelConversationUpdateRequest,
+    OmnichannelBulkActionResponse,
+    OmnichannelBulkConversationRequest,
     OmnichannelInboxItemResponse,
     OmnichannelMessageCreateRequest,
     OmnichannelMessageResponse,
@@ -32,9 +40,12 @@ from app.services.employee_rag_service import EmployeeRAGService
 from app.services.embedding_service import EmbeddingService
 from app.services.omnichannel_conversation_service import (
     build_conversation_detail_response,
+    bulk_archive_omnichannel_conversations,
+    bulk_delete_omnichannel_conversations,
     create_conversation_message,
     create_omnichannel_conversation,
     delete_omnichannel_conversation,
+    get_omnichannel_conversation_for_audit_or_404,
     get_omnichannel_conversation_or_404,
     list_conversation_messages,
     list_omnichannel_conversations,
@@ -43,9 +54,18 @@ from app.services.omnichannel_conversation_service import (
     update_omnichannel_conversation,
 )
 from app.services.omnichannel_inbox_service import list_unified_inbox
+from app.services.omnichannel_audit_service import list_conversation_audit_logs
 from app.services.retrieval_service import get_cached_embedding_service
 
 router = APIRouter(prefix="/omnichannel-conversations", tags=["omnichannel-conversations"])
+
+
+class OmnichannelAuditLogResponse(BaseModel):
+    id: uuid.UUID
+    action: str
+    actor_user_id: uuid.UUID | None
+    details: dict[str, Any] | None
+    created_at: datetime
 
 
 def get_embedding_service(
@@ -74,6 +94,7 @@ def list_unified_inbox_endpoint(
     channel_type: Annotated[OmnichannelChannelType | None, Query()] = None,
     status: Annotated[OmnichannelConversationStatus | None, Query()] = None,
     unassigned_only: Annotated[bool, Query()] = False,
+    inbox_view: Annotated[OmnichannelInboxView, Query()] = OmnichannelInboxView.ACTIVE,
 ) -> list[OmnichannelInboxItemResponse]:
     """List conversations for the unified omnichannel inbox."""
     return list_unified_inbox(
@@ -83,6 +104,45 @@ def list_unified_inbox_endpoint(
         channel_type=channel_type,
         status=status,
         unassigned_only=unassigned_only,
+        inbox_view=inbox_view,
+    )
+
+
+@router.post("/bulk/archive", response_model=OmnichannelBulkActionResponse)
+def bulk_archive_conversations_endpoint(
+    payload: OmnichannelBulkConversationRequest,
+    current_user: Annotated[User, Depends(require_permission(OMNICHANNEL_CONVERSATIONS_WRITE))],
+    db: Annotated[Session, Depends(get_db)],
+) -> OmnichannelBulkActionResponse:
+    """Archive multiple conversations (hide from active inbox, keep audit trail)."""
+    affected = bulk_archive_omnichannel_conversations(
+        db,
+        organization_id=current_user.organization_id,
+        conversation_ids=payload.conversation_ids,
+        actor_user_id=current_user.id,
+    )
+    return OmnichannelBulkActionResponse(
+        affected_count=len(affected),
+        conversation_ids=affected,
+    )
+
+
+@router.post("/bulk/delete", response_model=OmnichannelBulkActionResponse)
+def bulk_delete_conversations_endpoint(
+    payload: OmnichannelBulkConversationRequest,
+    current_user: Annotated[User, Depends(require_permission(OMNICHANNEL_CONVERSATIONS_DELETE))],
+    db: Annotated[Session, Depends(get_db)],
+) -> OmnichannelBulkActionResponse:
+    """Soft-delete multiple conversations."""
+    affected = bulk_delete_omnichannel_conversations(
+        db,
+        organization_id=current_user.organization_id,
+        conversation_ids=payload.conversation_ids,
+        actor_user_id=current_user.id,
+    )
+    return OmnichannelBulkActionResponse(
+        affected_count=len(affected),
+        conversation_ids=affected,
     )
 
 
@@ -148,6 +208,7 @@ def update_omnichannel_conversation_endpoint(
         conversation=conversation,
         organization_id=current_user.organization_id,
         payload=payload,
+        actor_user_id=current_user.id,
     )
 
 
@@ -157,13 +218,18 @@ def delete_omnichannel_conversation_endpoint(
     current_user: Annotated[User, Depends(require_permission(OMNICHANNEL_CONVERSATIONS_DELETE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
-    """Delete an omnichannel conversation."""
+    """Soft-delete an omnichannel conversation."""
     conversation = get_omnichannel_conversation_or_404(
         db,
         conversation_id=conversation_id,
         organization_id=current_user.organization_id,
     )
-    delete_omnichannel_conversation(db, conversation=conversation)
+    delete_omnichannel_conversation(
+        db,
+        conversation=conversation,
+        organization_id=current_user.organization_id,
+        actor_user_id=current_user.id,
+    )
 
 
 @router.get("/{conversation_id}/messages", response_model=list[OmnichannelMessageResponse])
@@ -251,4 +317,37 @@ def request_human_handoff_endpoint(
         conversation_id=conversation_id,
         organization_id=current_user.organization_id,
     )
-    return request_human_handoff(db, conversation=conversation)
+    return request_human_handoff(
+        db,
+        conversation=conversation,
+        actor_user_id=current_user.id,
+    )
+
+
+@router.get("/{conversation_id}/audit-logs", response_model=list[OmnichannelAuditLogResponse])
+def list_conversation_audit_logs_endpoint(
+    conversation_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_permission(OMNICHANNEL_CONVERSATIONS_READ))],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[OmnichannelAuditLogResponse]:
+    """List audit log entries for an omnichannel conversation."""
+    get_omnichannel_conversation_for_audit_or_404(
+        db,
+        conversation_id=conversation_id,
+        organization_id=current_user.organization_id,
+    )
+    logs = list_conversation_audit_logs(
+        db,
+        organization_id=current_user.organization_id,
+        conversation_id=conversation_id,
+    )
+    return [
+        OmnichannelAuditLogResponse(
+            id=log.id,
+            action=log.action.value,
+            actor_user_id=log.actor_user_id,
+            details=log.details,
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]

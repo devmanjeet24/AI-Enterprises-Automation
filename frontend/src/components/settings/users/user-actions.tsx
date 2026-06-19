@@ -34,9 +34,9 @@ export function UserActions({ user, canWrite = true }: UserActionsProps) {
     setActiveAction("activate");
     try {
       await updateMutation.mutateAsync({ is_active: true });
-      toast.success("User account activated.");
+      toast.success("User account reactivated.");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to activate user."));
+      toast.error(getApiErrorMessage(error, "Failed to reactivate user."));
     } finally {
       setActiveAction(null);
     }
@@ -107,7 +107,7 @@ export function UserActions({ user, canWrite = true }: UserActionsProps) {
               ) : (
                 <UserCheck className="size-3.5" />
               )}
-              Activate user
+              Reactivate user
             </Button>
           )}
         </div>

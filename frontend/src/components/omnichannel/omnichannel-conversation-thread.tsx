@@ -66,7 +66,7 @@ export function OmnichannelConversationThread({
       });
       setContent("");
       setSuggestion(null);
-      toast.success(isInternal ? "Internal note added" : "Message sent");
+      toast.success(isInternal ? "Internal note added." : "Message sent.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to send message."));
     }
@@ -77,7 +77,7 @@ export function OmnichannelConversationThread({
       const result = await suggestMutation.mutateAsync();
       setSuggestion(result.suggestion);
       setContent(result.suggestion);
-      toast.success("AI suggestion generated");
+      toast.success("AI suggestion generated.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to generate suggestion."));
     }

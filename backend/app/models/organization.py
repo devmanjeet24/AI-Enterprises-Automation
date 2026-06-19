@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from app.models.role import Role
     from app.models.team import Team
     from app.models.user import User
+    from app.models.user_invitation import UserInvitation
     from app.models.browser_profile import BrowserProfile
     from app.models.browser_task import BrowserTask
     from app.models.browser_task_execution import BrowserTaskExecution
@@ -51,6 +52,10 @@ class Organization(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     users: Mapped[list["User"]] = relationship(back_populates="organization")
+    user_invitations: Mapped[list["UserInvitation"]] = relationship(
+        back_populates="organization",
+        cascade="all, delete-orphan",
+    )
     roles: Mapped[list["Role"]] = relationship(back_populates="organization")
     departments: Mapped[list["Department"]] = relationship(back_populates="organization")
     teams: Mapped[list["Team"]] = relationship(back_populates="organization")

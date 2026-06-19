@@ -49,8 +49,8 @@ export function UserCard({ user }: UserCardProps) {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-1.5">
-          {user.roles.length > 0 ? (
-            user.roles.map((role) => (
+          {(user.roles ?? []).length > 0 ? (
+            (user.roles ?? []).map((role) => (
               <span
                 key={role.id}
                 className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
@@ -68,7 +68,7 @@ export function UserCard({ user }: UserCardProps) {
           <div className="flex flex-col gap-1">
             <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Mail className="size-3.5" />
-              {user.roles.length} role{user.roles.length === 1 ? "" : "s"}
+              {(user.roles ?? []).length} role{(user.roles ?? []).length === 1 ? "" : "s"}
             </span>
             <span className="text-[11px] text-tertiary">
               Updated {formatRelativeDate(user.updated_at)}

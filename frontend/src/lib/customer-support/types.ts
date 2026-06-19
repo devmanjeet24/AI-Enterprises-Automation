@@ -35,6 +35,8 @@ export interface SupportTicket {
   customer_email: string | null;
   status: SupportTicketStatus;
   priority: SupportTicketPriority;
+  resolved_at: string | null;
+  resolved_message_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +46,7 @@ export interface SupportTicketDetail extends SupportTicket {
   assigned_user_name: string | null;
   assigned_ai_employee_name: string | null;
   message_count: number;
+  has_resolution: boolean;
 }
 
 export interface SupportMessage {
@@ -119,6 +122,23 @@ export interface CreateSupportMessageInput {
   content: string;
   role?: SupportMessageRole;
   is_internal?: boolean;
+  resolve_ticket?: boolean;
+  as_ai_employee?: boolean;
+}
+
+export interface SupportAiSuggestion {
+  suggestion: string;
+  sources: KnowledgeSourceCitation[];
+  confidence: number;
+  recommended_status: SupportTicketStatus;
+  reasoning: string;
+  can_auto_resolve: boolean;
+}
+
+export interface KnowledgeSourceCitation {
+  document_title: string;
+  page_number: number | null;
+  similarity_score: number;
 }
 
 export interface ListSupportTicketsParams {

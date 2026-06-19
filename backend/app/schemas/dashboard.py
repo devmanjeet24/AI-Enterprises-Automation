@@ -13,3 +13,6 @@ class DashboardOverviewResponse(BaseModel):
     total_workflows: int = Field(ge=0)
     total_research_projects: int = Field(ge=0)
     total_browser_tasks: int = Field(ge=0)
+    total_support_tickets: int = Field(ge=0)
+    total_voice_sessions: int = Field(ge=0)
+    total_omnichannel_conversations: int = Field(ge=0)

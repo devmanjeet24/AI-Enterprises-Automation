@@ -15,18 +15,21 @@ from app.api.v1.endpoints import (
     knowledge,
     omnichannel_channels,
     omnichannel_conversations,
+    omnichannel_realtime,
+    omnichannel_webhooks,
+    omnichannel_widget,
     organizations,
     permissions,
     research_projects,
     roles,
+    slack_integration,
+    linkedin_integration,
     support_categories,
     support_tickets,
     teams,
     users,
     voice_agents,
     voice_sessions,
-    omnichannel_channels,
-    omnichannel_conversations,
     workflows,
 )
 
@@ -50,6 +53,11 @@ api_router.include_router(voice_agents.router)
 api_router.include_router(voice_sessions.router)
 api_router.include_router(omnichannel_channels.router)
 api_router.include_router(omnichannel_conversations.router)
+api_router.include_router(omnichannel_realtime.router)
+api_router.include_router(omnichannel_widget.router)
+api_router.include_router(omnichannel_webhooks.router)
+api_router.include_router(slack_integration.router)
+api_router.include_router(linkedin_integration.router)
 api_router.include_router(conversations.router)
 api_router.include_router(departments.router)
 api_router.include_router(teams.router)

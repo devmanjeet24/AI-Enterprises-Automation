@@ -84,6 +84,9 @@ class BrowserTaskExecutionSummaryResponse(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     created_at: datetime
+    steps_completed: int | None = None
+    steps_total: int | None = None
+    has_failure_screenshot: bool = False
 
     model_config = {"from_attributes": True}
 

@@ -140,7 +140,35 @@ class OmnichannelChannelType(str, enum.Enum):
     WEBSITE_CHAT = "website_chat"
     TELEGRAM = "telegram"
     SLACK = "slack"
+    EMAIL = "email"
+    WHATSAPP = "whatsapp"
+    LINKEDIN = "linkedin"
     INTERNAL = "internal"
+
+
+class OmnichannelAuditAction(str, enum.Enum):
+    """Auditable omnichannel lifecycle events."""
+
+    CONVERSATION_CREATED = "conversation_created"
+    MESSAGE_SENT = "message_sent"
+    STATUS_CHANGED = "status_changed"
+    HANDOFF_REQUESTED = "handoff_requested"
+    HANDOFF_ASSIGNED = "handoff_assigned"
+    AGENT_ASSIGNED = "agent_assigned"
+    TICKET_ESCALATED = "ticket_escalated"
+    CHANNEL_UPDATED = "channel_updated"
+    WIDGET_MESSAGE = "widget_message"
+    WEBHOOK_RECEIVED = "webhook_received"
+    CONVERSATION_ARCHIVED = "conversation_archived"
+    CONVERSATION_UNARCHIVED = "conversation_unarchived"
+    CONVERSATION_DELETED = "conversation_deleted"
+
+
+class OmnichannelInboxView(str, enum.Enum):
+    """Inbox visibility filter for omnichannel conversations."""
+
+    ACTIVE = "active"
+    ARCHIVED = "archived"
 
 
 class OmnichannelConversationStatus(str, enum.Enum):

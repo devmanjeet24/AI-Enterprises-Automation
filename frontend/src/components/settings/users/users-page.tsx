@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-card";
 import { filterUsersByStatus } from "@/config/users";
-import { useUsers } from "@/hooks/use-users";
+import { useUserInvitations, useUsers } from "@/hooks/use-users";
+import { useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { isAccessDeniedError } from "@/lib/users/access";
 import type { UserStatusFilter } from "@/lib/users/types";
 import { dashboardAccents } from "@/lib/dashboard-accents";
@@ -18,6 +20,7 @@ import { UsersHero } from "./users-hero";
 import { UsersSkeleton } from "./users-skeleton";
 import { UsersStats } from "./users-stats";
 import { UserCardGrid } from "./user-card-grid";
+import { PendingInvitations, UserManagementActions } from "./user-management-actions";
 
 const statusFilters: { value: UserStatusFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -27,15 +30,21 @@ const statusFilters: { value: UserStatusFilter; label: string }[] = [
 
 export function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<UserStatusFilter>("all");
+  const permissions = useUserPermissions();
   const accent = dashboardAccents.emerald;
+  const canWrite = hasPermission(permissions, PERMISSIONS.USERS_WRITE);
+  const canAssignRole = hasPermission(permissions, PERMISSIONS.USERS_ASSIGN_ROLE);
 
   const {
-    data: users = [],
+    data: usersData,
     isLoading,
     isError,
     error,
     refetch,
   } = useUsers();
+  const { data: invitationsData = [] } = useUserInvitations();
+  const users = Array.isArray(usersData) ? usersData : [];
+  const invitations = Array.isArray(invitationsData) ? invitationsData : [];
 
   const filteredUsers = useMemo(
     () => filterUsersByStatus(users, statusFilter),
@@ -63,9 +72,21 @@ export function UsersPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="px-6 py-8 md:px-8">
+        <UsersError
+          title="Failed to load users"
+          message={errorMessage!}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-10 md:pb-12">
-      <UsersHero users={users} />
+      <UsersHero users={users} actions={<UserManagementActions canWrite={canWrite} canAssignRole={canAssignRole} />} />
 
       <div className="mt-10 space-y-10 md:mt-12 md:space-y-12">
         <section className="px-6 md:px-8">
@@ -78,19 +99,17 @@ export function UsersPage() {
         </section>
 
         <section className="px-6 md:px-8">
+          <PendingInvitations invitations={invitations} canWrite={canWrite} />
+        </section>
+
+        <section className="px-6 md:px-8">
           <DashboardSectionHeader
             eyebrow="Accounts"
             title="Organization users"
             description="Open a user to edit their profile, manage roles, or change account status."
           />
 
-          {isError ? (
-            <UsersError
-              title="Failed to load users"
-              message={errorMessage!}
-              onRetry={() => refetch()}
-            />
-          ) : users.length === 0 ? (
+          {users.length === 0 ? (
             <UsersEmptyState />
           ) : (
             <>

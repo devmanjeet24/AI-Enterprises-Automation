@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { createUniqueId } from "@/lib/create-unique-id";
 import { cn } from "@/lib/utils";
 
 type ToastVariant = "success" | "error" | "info";
@@ -57,9 +58,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const push = useCallback(
     (message: string, variant: ToastVariant = "info") => {
-      const id = crypto.randomUUID();
-      setToasts((current) => [...current, { id, message, variant }]);
-      window.setTimeout(() => dismiss(id), TOAST_DURATION_MS);
+      try {
+        const id = createUniqueId("toast");
+        setToasts((current) => [...current, { id, message, variant }]);
+        window.setTimeout(() => dismiss(id), TOAST_DURATION_MS);
+      } catch {
+        // Never let notification failures interrupt user actions.
+        console.warn(`[toast:${variant}]`, message);
+      }
     },
     [dismiss],
   );

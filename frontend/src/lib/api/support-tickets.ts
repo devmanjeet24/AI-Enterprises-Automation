@@ -3,6 +3,7 @@ import type {
   CreateSupportMessageInput,
   CreateSupportTicketInput,
   ListSupportTicketsParams,
+  SupportAiSuggestion,
   SupportAnalytics,
   SupportMessage,
   SupportTicket,
@@ -107,6 +108,19 @@ export function createTicketMessage(
       method: "POST",
       token,
       body: input,
+    },
+  );
+}
+
+export function suggestSupportTicketResponse(
+  token: string,
+  ticketId: string,
+): Promise<SupportAiSuggestion> {
+  return apiClient<SupportAiSuggestion>(
+    `${SUPPORT_TICKETS_BASE}/${ticketId}/suggest-response`,
+    {
+      method: "POST",
+      token,
     },
   );
 }

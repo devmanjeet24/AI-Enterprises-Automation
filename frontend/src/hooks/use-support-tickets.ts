@@ -16,6 +16,7 @@ import {
   getSupportTicket,
   listSupportTickets,
   listTicketMessages,
+  suggestSupportTicketResponse,
   updateSupportTicket,
 } from "@/lib/api/support-tickets";
 import { supportTicketKeys } from "@/lib/customer-support/query-keys";
@@ -177,6 +178,14 @@ export function useCreateTicketMessage(ticketId: string) {
       queryClient.invalidateQueries({ queryKey: supportTicketKeys.detail(ticketId) });
       queryClient.invalidateQueries({ queryKey: supportTicketKeys.analytics() });
     },
+  });
+}
+
+export function useSuggestSupportTicketResponse(ticketId: string) {
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationFn: () => suggestSupportTicketResponse(token!, ticketId),
   });
 }
 

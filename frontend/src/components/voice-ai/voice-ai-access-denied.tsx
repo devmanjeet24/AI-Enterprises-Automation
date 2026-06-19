@@ -13,7 +13,7 @@ interface VoiceAiAccessDeniedProps {
 
 export function VoiceAiAccessDenied({
   title = "Access denied",
-  message = "You do not have permission to view Voice AI. Contact your organization admin if you need access.",
+  message = "You do not have permission to view Voice Assistant. Contact your organization admin if you need access.",
 }: VoiceAiAccessDeniedProps) {
   return (
     <DashboardCard

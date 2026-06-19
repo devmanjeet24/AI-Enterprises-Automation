@@ -53,3 +53,13 @@ export function deleteBrowserProfile(token: string, profileId: string): Promise<
     token,
   });
 }
+
+export function clearBrowserProfileSession(
+  token: string,
+  profileId: string,
+): Promise<BrowserProfile> {
+  return apiClient<BrowserProfile>(`${BROWSER_PROFILES_BASE}/${profileId}/session`, {
+    method: "DELETE",
+    token,
+  });
+}

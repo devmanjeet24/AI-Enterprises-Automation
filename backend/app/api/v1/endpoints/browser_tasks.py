@@ -3,7 +3,8 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -29,6 +30,7 @@ from app.services.browser_runner_service import (
     list_browser_task_executions,
     run_browser_task,
 )
+from app.services.browser_screenshot_store import get_execution_screenshot_path
 from app.services.browser_task_service import (
     create_browser_task,
     delete_browser_task,
@@ -38,6 +40,24 @@ from app.services.browser_task_service import (
 )
 
 router = APIRouter(prefix="/browser-tasks", tags=["browser-tasks"])
+
+
+def _execution_to_summary(execution) -> BrowserTaskExecutionSummaryResponse:
+    metadata = execution.execution_metadata or {}
+    return BrowserTaskExecutionSummaryResponse(
+        id=execution.id,
+        organization_id=execution.organization_id,
+        browser_task_id=execution.browser_task_id,
+        browser_profile_id=execution.browser_profile_id,
+        status=execution.status,
+        error_message=execution.error_message,
+        started_at=execution.started_at,
+        completed_at=execution.completed_at,
+        created_at=execution.created_at,
+        steps_completed=metadata.get("steps_completed"),
+        steps_total=metadata.get("steps_total"),
+        has_failure_screenshot=bool(metadata.get("has_failure_screenshot")),
+    )
 
 
 @router.get("/analytics", response_model=BrowserAnalyticsResponse)
@@ -91,10 +111,49 @@ def list_all_browser_executions_endpoint(
             task_id=browser_task_id,
             organization_id=current_user.organization_id,
         )
-    return list_browser_task_executions(
+    return [
+        _execution_to_summary(execution)
+        for execution in list_browser_task_executions(
+            db,
+            organization_id=current_user.organization_id,
+            task_id=browser_task_id,
+        )
+    ]
+
+
+@router.get("/executions/{execution_id}/screenshot")
+def get_browser_execution_screenshot_endpoint(
+    execution_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_permission(BROWSER_TASKS_READ))],
+    db: Annotated[Session, Depends(get_db)],
+) -> FileResponse:
+    """Return the failure screenshot captured during a browser task execution."""
+    execution = get_browser_task_execution_or_404(
         db,
+        execution_id=execution_id,
         organization_id=current_user.organization_id,
-        task_id=browser_task_id,
+    )
+    metadata = execution.execution_metadata or {}
+    if not metadata.get("has_failure_screenshot"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No failure screenshot available for this execution",
+        )
+
+    screenshot_path = get_execution_screenshot_path(
+        organization_id=current_user.organization_id,
+        execution_id=execution.id,
+    )
+    if not screenshot_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Failure screenshot file not found",
+        )
+
+    return FileResponse(
+        path=str(screenshot_path),
+        media_type="image/png",
+        filename=f"execution-{execution.id}-failure.png",
     )
 
 
@@ -157,7 +216,7 @@ def run_browser_task_endpoint(
     current_user: Annotated[User, Depends(require_permission(BROWSER_TASKS_EXECUTE))],
     db: Annotated[Session, Depends(get_db)],
 ) -> BrowserTaskExecutionResponse:
-    """Run a simulated browser task and store logs and results."""
+    """Run a browser task with Playwright and store logs and results."""
     return run_browser_task(
         db,
         organization_id=current_user.organization_id,
@@ -181,11 +240,14 @@ def list_browser_task_executions_endpoint(
         task_id=task_id,
         organization_id=current_user.organization_id,
     )
-    return list_browser_task_executions(
-        db,
-        organization_id=current_user.organization_id,
-        task_id=task_id,
-    )
+    return [
+        _execution_to_summary(execution)
+        for execution in list_browser_task_executions(
+            db,
+            organization_id=current_user.organization_id,
+            task_id=task_id,
+        )
+    ]
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)

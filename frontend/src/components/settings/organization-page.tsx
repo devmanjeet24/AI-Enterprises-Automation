@@ -1,10 +1,10 @@
 "use client";
 
-import { useAuthUser } from "@/hooks/use-auth-token";
+import { useUserPermissions } from "@/hooks/use-auth-token";
 import { useOrganization } from "@/hooks/use-settings";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { isAccessDeniedError } from "@/lib/settings/access";
-import { isOrganizationAdmin } from "@/lib/settings/guards";
 
 import { OrganizationSettingsPanel } from "./organization-settings-panel";
 import { SettingsAccessDenied } from "./settings-access-denied";
@@ -13,8 +13,8 @@ import { SettingsLayout } from "./settings-layout";
 import { OrganizationPageSkeleton } from "./settings-skeleton";
 
 export function OrganizationPage() {
-  const user = useAuthUser();
-  const canWrite = isOrganizationAdmin(user);
+  const permissions = useUserPermissions();
+  const canWrite = hasPermission(permissions, PERMISSIONS.ORGANIZATIONS_WRITE);
 
   const {
     data: organization,

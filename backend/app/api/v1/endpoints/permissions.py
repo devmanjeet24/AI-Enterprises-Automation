@@ -14,6 +14,7 @@ from app.core.permissions import (
     PERMISSIONS_READ,
     PERMISSIONS_WRITE,
 )
+from app.core.rbac_guards import ensure_can_delete_permission, ensure_can_revoke_permission_from_role
 from app.db.session import get_db
 from app.models.permission import Permission
 from app.models.role import Role
@@ -212,6 +213,7 @@ def delete_permission(
         permission_id=permission_id,
         organization_id=current_user.organization_id,
     )
+    ensure_can_delete_permission(permission)
     db.delete(permission)
     db.commit()
 
@@ -301,16 +303,17 @@ def remove_permission_from_role(
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Revoke a permission from a role in the current organization."""
-    _get_role_or_404(
+    role = _get_role_or_404(
         db,
         role_id=role_id,
         organization_id=current_user.organization_id,
     )
-    _get_permission_or_404(
+    permission = _get_permission_or_404(
         db,
         permission_id=permission_id,
         organization_id=current_user.organization_id,
     )
+    ensure_can_revoke_permission_from_role(role, permission)
 
     link = db.scalar(
         select(RolePermission).where(

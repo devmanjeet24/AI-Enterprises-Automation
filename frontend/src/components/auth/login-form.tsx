@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { siteConfig } from "@/config/site";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import { loginAndEstablishSession } from "@/lib/auth/session";
+import { loginAndEstablishSession, resolvePostLoginPath } from "@/lib/auth/session";
 import {
   hasFieldErrors,
   validateLoginForm,
@@ -27,6 +27,7 @@ const initialValues: LoginFormValues = {
 export function LoginForm() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState<FieldErrors<LoginFormValues>>({});
@@ -62,7 +63,7 @@ export function LoginForm() {
         values.email.trim(),
         values.password.trim(),
       );
-      router.replace("/overview");
+      router.replace(resolvePostLoginPath(searchParams.get("from")));
     } catch (error) {
       setErrors({ form: getApiErrorMessage(error, "Unable to sign in. Please try again.") });
     } finally {
@@ -72,11 +73,11 @@ export function LoginForm() {
 
   return (
     <div className="w-full">
-      <div className="mb-8">
-        <h1 className="font-display text-[1.75rem] leading-[1.2] tracking-[-0.03em] text-foreground lg:text-[2rem]">
+      <div className="mb-9">
+        <h1 className="font-display text-[1.875rem] leading-[1.18] tracking-[-0.03em] text-foreground lg:text-[2.125rem]">
           Welcome back
         </h1>
-        <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           Sign in to your enterprise AI workspace
         </p>
       </div>

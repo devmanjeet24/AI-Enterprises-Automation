@@ -21,6 +21,9 @@ const loadingKpiPlaceholders: OverviewKpiItem[] = [
   { label: "Workflows", value: "—", change: "Loading…", trend: "neutral", accent: "purple" },
   { label: "Research Projects", value: "—", change: "Loading…", trend: "neutral", accent: "gold" },
   { label: "Browser Tasks", value: "—", change: "Loading…", trend: "neutral", accent: "gold" },
+  { label: "Support Tickets", value: "—", change: "Loading…", trend: "neutral", accent: "emerald" },
+  { label: "Voice Sessions", value: "—", change: "Loading…", trend: "neutral", accent: "blue" },
+  { label: "Omnichannel", value: "—", change: "Loading…", trend: "neutral", accent: "purple" },
 ];
 
 export function OverviewKpiGrid({ kpis, isLoading }: OverviewKpiGridProps) {

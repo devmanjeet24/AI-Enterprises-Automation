@@ -1,15 +1,33 @@
 "use client";
 
-import { Bot, Loader2, Send, User } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpen,
+  Bot,
+  CheckCircle2,
+  Loader2,
+  Send,
+  Sparkles,
+  User,
+} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
-import { formatDateTime } from "@/config/customer-support";
-import { useCreateTicketMessage, useTicketMessages } from "@/hooks/use-support-tickets";
+import { formatDateTime, supportStatusLabels } from "@/config/customer-support";
+import {
+  useCreateTicketMessage,
+  useSuggestSupportTicketResponse,
+  useTicketMessages,
+  useUpdateSupportTicket,
+} from "@/hooks/use-support-tickets";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import type { SupportMessageRole } from "@/lib/customer-support/types";
+import type {
+  SupportAiSuggestion,
+  SupportMessageRole,
+  SupportTicketStatus,
+} from "@/lib/customer-support/types";
 import { useToast } from "@/providers/toast-provider";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +35,10 @@ import { CustomerSupportError } from "./customer-support-error";
 
 interface SupportTicketConversationProps {
   ticketId: string;
+  ticketStatus: SupportTicketStatus;
   canReply: boolean;
+  assignedAiEmployeeId?: string | null;
+  assignedAiEmployeeName?: string | null;
 }
 
 function getAuthorLabel(message: {
@@ -56,13 +77,24 @@ function AuthorLabel({
   return <span className="text-[12px] font-medium text-foreground">{label}</span>;
 }
 
+function confidenceTone(confidence: number): string {
+  if (confidence >= 0.75) return "text-emerald-400";
+  if (confidence >= 0.55) return "text-amber-400";
+  return "text-rose-400";
+}
+
 export function SupportTicketConversation({
   ticketId,
+  ticketStatus,
   canReply,
+  assignedAiEmployeeId,
+  assignedAiEmployeeName,
 }: SupportTicketConversationProps) {
   const toast = useToast();
   const [content, setContent] = useState("");
   const [isInternal, setIsInternal] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<SupportAiSuggestion | null>(null);
+  const analyzedTicketRef = useRef<string | null>(null);
 
   const {
     data: messages = [],
@@ -73,20 +105,76 @@ export function SupportTicketConversation({
   } = useTicketMessages(ticketId);
 
   const replyMutation = useCreateTicketMessage(ticketId);
+  const updateMutation = useUpdateSupportTicket(ticketId);
+  const suggestMutation = useSuggestSupportTicketResponse(ticketId);
+  const canUseAiEmployee = Boolean(assignedAiEmployeeId) && canReply;
+  const isTerminalStatus = ticketStatus === "resolved" || ticketStatus === "closed";
+  const isAnalyzing = suggestMutation.isPending;
 
-  const handleSend = async () => {
+  const applySuggestion = (result: SupportAiSuggestion) => {
+    setAiSuggestion(result);
+    setContent(result.suggestion);
+  };
+
+  const handleAnalyze = async () => {
+    try {
+      const result = await suggestMutation.mutateAsync();
+      applySuggestion(result);
+    } catch (analyzeError) {
+      toast.error(getApiErrorMessage(analyzeError, "Failed to analyze ticket."));
+    }
+  };
+
+  useEffect(() => {
+    if (!canUseAiEmployee || isTerminalStatus) return;
+    if (analyzedTicketRef.current === ticketId) return;
+
+    analyzedTicketRef.current = ticketId;
+    void handleAnalyze();
+  }, [ticketId, canUseAiEmployee, isTerminalStatus]);
+
+  const resetComposer = () => {
+    setContent("");
+    setAiSuggestion(null);
+    setIsInternal(false);
+  };
+
+  const handleSend = async (resolveTicket = false) => {
     if (!content.trim()) return;
 
     try {
       await replyMutation.mutateAsync({
         content: content.trim(),
-        role: "agent",
         is_internal: isInternal,
+        resolve_ticket: resolveTicket,
+        as_ai_employee: Boolean(aiSuggestion) && !isInternal,
       });
-      setContent("");
-      toast.success(isInternal ? "Internal note added" : "Reply sent");
+      resetComposer();
+      toast.success(
+        resolveTicket
+          ? "Reply sent and ticket resolved."
+          : isInternal
+            ? "Internal note added."
+            : "Reply sent.",
+      );
     } catch (sendError) {
       toast.error(getApiErrorMessage(sendError, "Failed to send message."));
+    }
+  };
+
+  const handleEscalate = async () => {
+    try {
+      await updateMutation.mutateAsync({ status: "waiting" });
+      await replyMutation.mutateAsync({
+        content: aiSuggestion
+          ? `Escalated to human agent. ${aiSuggestion.reasoning}`
+          : "Escalated to human agent for manual review.",
+        is_internal: true,
+      });
+      resetComposer();
+      toast.success("Ticket escalated to human review.");
+    } catch (escalateError) {
+      toast.error(getApiErrorMessage(escalateError, "Failed to escalate ticket."));
     }
   };
 
@@ -124,7 +212,7 @@ export function SupportTicketConversation({
       <div className="max-h-[480px] flex-1 space-y-4 overflow-y-auto px-5 py-4">
         {messages.length === 0 ? (
           <p className="py-8 text-center text-[13px] text-muted-foreground">
-            No messages yet. Send the first reply below.
+            No messages yet. The assigned AI employee will draft the first reply below.
           </p>
         ) : (
           messages.map((message) => {
@@ -190,14 +278,108 @@ export function SupportTicketConversation({
 
       {canReply && (
         <div className="border-t border-white/[0.06] p-4">
+          {canUseAiEmployee && !isTerminalStatus && (
+            <div className="mb-3 rounded-lg border border-[#A78BFA]/20 bg-[#A78BFA]/5 px-3 py-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-2">
+                  <Bot className="mt-0.5 size-4 shrink-0 text-[#A78BFA]" />
+                  <div>
+                    <p className="text-[13px] font-medium text-foreground">
+                      {assignedAiEmployeeName ?? "AI employee"} analysis
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-muted-foreground">
+                      {isAnalyzing
+                        ? "Analyzing ticket and retrieving knowledge sources…"
+                        : aiSuggestion
+                          ? "Knowledge-grounded recommendation ready for review."
+                          : "Waiting for analysis."}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void handleAnalyze()}
+                  disabled={isAnalyzing}
+                >
+                  {isAnalyzing ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5" />
+                  )}
+                  Re-analyze
+                </Button>
+              </div>
+
+              {aiSuggestion && (
+                <div className="mt-3 space-y-3 border-t border-[#A78BFA]/10 pt-3">
+                  <div className="flex flex-wrap items-center gap-2 text-[12px]">
+                    <span className={cn("font-medium", confidenceTone(aiSuggestion.confidence))}>
+                      {(aiSuggestion.confidence * 100).toFixed(0)}% confidence
+                    </span>
+                    <span className="text-tertiary">·</span>
+                    <span className="text-muted-foreground">
+                      Recommended:{" "}
+                      <span className="text-foreground">
+                        {supportStatusLabels[aiSuggestion.recommended_status]}
+                      </span>
+                    </span>
+                    {aiSuggestion.can_auto_resolve && (
+                      <>
+                        <span className="text-tertiary">·</span>
+                        <span className="inline-flex items-center gap-1 text-emerald-400">
+                          <CheckCircle2 className="size-3.5" />
+                          Ready to resolve
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  <p className="text-[12px] leading-relaxed text-muted-foreground">
+                    {aiSuggestion.reasoning}
+                  </p>
+
+                  {aiSuggestion.sources.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-tertiary">
+                        Knowledge sources
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {aiSuggestion.sources.map((source, index) => (
+                          <li
+                            key={`${source.document_title}-${index}`}
+                            className="flex items-center gap-2 text-[12px] text-muted-foreground"
+                          >
+                            <BookOpen className="size-3.5 shrink-0 text-[#A78BFA]" />
+                            <span className="text-foreground">
+                              {source.document_title}
+                              {source.page_number != null && ` · p. ${source.page_number}`}
+                            </span>
+                            <span className="text-tertiary">
+                              {(source.similarity_score * 100).toFixed(0)}% match
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <textarea
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="Write a reply to the customer…"
+            placeholder={
+              canUseAiEmployee
+                ? "AI draft will appear here for review…"
+                : "Write a reply to the customer…"
+            }
             rows={3}
             className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[13px] text-foreground outline-none focus:border-brand/50"
           />
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
               <input
                 type="checkbox"
@@ -207,19 +389,48 @@ export function SupportTicketConversation({
               />
               Internal note
             </label>
-            <Button
-              variant="brand"
-              size="sm"
-              onClick={() => void handleSend()}
-              disabled={!content.trim() || replyMutation.isPending}
-            >
-              {replyMutation.isPending ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Send className="size-3.5" />
+            <div className="flex flex-wrap gap-2">
+              {canUseAiEmployee && aiSuggestion && !isInternal && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-amber-400 hover:text-amber-300"
+                  onClick={() => void handleEscalate()}
+                  disabled={replyMutation.isPending || updateMutation.isPending}
+                >
+                  <AlertTriangle className="size-3.5" />
+                  Escalate
+                </Button>
               )}
-              Send
-            </Button>
+              <Button
+                variant="brand"
+                size="sm"
+                onClick={() => void handleSend(false)}
+                disabled={!content.trim() || replyMutation.isPending}
+              >
+                {replyMutation.isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+                Send
+              </Button>
+              {aiSuggestion?.can_auto_resolve && !isInternal && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void handleSend(true)}
+                  disabled={!content.trim() || replyMutation.isPending}
+                >
+                  {replyMutation.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="size-3.5" />
+                  )}
+                  Send &amp; resolve
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -8,11 +8,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { channelTypeLabels, formatDateTime } from "@/config/omnichannel";
+import { siteConfig } from "@/config/site";
 import {
   useCreateOmnichannelConversation,
-  useInbox,
   useOmnichannelChannel,
 } from "@/hooks/use-omnichannel";
+import { useOmnichannelRealtime } from "@/hooks/use-omnichannel-realtime";
 import { useUserPermissions } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/api/client";
 import { getApiErrorMessage } from "@/lib/api/errors";
@@ -27,8 +28,8 @@ import {
   OmnichannelChannelTypeBadge,
 } from "./omnichannel-badges";
 import { OmnichannelError } from "./omnichannel-error";
-import { OmnichannelInboxList } from "./omnichannel-inbox-list";
-import { OmnichannelDetailSkeleton, OmnichannelInboxSkeleton } from "./omnichannel-skeleton";
+import { OmnichannelInboxPanel } from "./omnichannel-inbox-panel";
+import { OmnichannelDetailSkeleton } from "./omnichannel-skeleton";
 
 export function OmnichannelChannelDetailPage({ channelId }: { channelId: string }) {
   const router = useRouter();
@@ -39,8 +40,8 @@ export function OmnichannelChannelDetailPage({ channelId }: { channelId: string 
   const canWrite = hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CONVERSATIONS_WRITE);
 
   const { data: channel, isLoading, isError, error, refetch } = useOmnichannelChannel(channelId);
-  const { data: inbox = [], isLoading: loadingInbox } = useInbox({ channel_id: channelId });
   const createConversation = useCreateOmnichannelConversation();
+  useOmnichannelRealtime();
 
   if (isLoading) return <OmnichannelDetailSkeleton />;
 
@@ -76,7 +77,7 @@ export function OmnichannelChannelDetailPage({ channelId }: { channelId: string 
         external_contact_name: "Demo Customer",
         initial_message: "Hello, I need help with my account.",
       });
-      toast.success("Conversation created");
+      toast.success("Conversation created.");
       router.push(`/omnichannel/conversations/${conversation.id}`);
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to create conversation."));
@@ -143,17 +144,99 @@ export function OmnichannelChannelDetailPage({ channelId }: { channelId: string 
             </div>
           </dl>
           <p className="mt-4 text-[12px] text-muted-foreground">
-            Simulated connector — no external Telegram or Slack APIs.
+            Configure connector credentials in channel settings. Webhook URLs are generated per channel.
           </p>
+          {channel.channel_type === "website_chat" && channel.public_key && (
+            <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[12px] font-medium text-foreground">Website embed code</p>
+              <pre className="mt-2 overflow-x-auto text-[11px] text-muted-foreground">
+{`<script
+  src="${siteConfig.url}/widget/omnichannel-chat.js"
+  data-channel-key="${channel.public_key}"
+  data-api-url="${siteConfig.apiUrl}"
+  async
+></script>`}
+              </pre>
+              <a
+                href={`${siteConfig.url}/widget-test.html?key=${encodeURIComponent(channel.public_key)}&api=${encodeURIComponent(siteConfig.apiUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex text-[12px] font-medium text-brand hover:text-brand-hover"
+              >
+                Open test page →
+              </a>
+            </div>
+          )}
+          {channel.channel_type === "slack" && (
+            <div className="mt-4 space-y-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-muted-foreground">
+              <p className="text-[12px] font-medium text-foreground">Slack setup</p>
+              <div>
+                <p className="font-medium text-foreground">Event Subscriptions Request URL</p>
+                <p className="mt-1 break-all font-mono">
+                  {siteConfig.realtimeApiUrl}/api/v1/omnichannel-webhooks/slack/{channel.id}
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">OAuth Redirect URL</p>
+                <p className="mt-1 break-all font-mono">
+                  {siteConfig.realtimeApiUrl}/api/v1/integrations/slack/oauth/callback
+                </p>
+              </div>
+              <a
+                href={`${siteConfig.realtimeApiUrl}/api/v1/integrations/slack/install?channel_id=${channel.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex text-[12px] font-medium text-brand hover:text-brand-hover"
+              >
+                Connect Slack workspace →
+              </a>
+              <p className="text-[11px]">
+                Backend env: SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, SLACK_SIGNING_SECRET, SLACK_BOT_TOKEN
+              </p>
+            </div>
+          )}
+          {channel.channel_type === "linkedin" && (
+            <div className="mt-4 space-y-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-muted-foreground">
+              <p className="text-[12px] font-medium text-foreground">LinkedIn setup</p>
+              <div>
+                <p className="font-medium text-foreground">Social Actions Webhook URL</p>
+                <p className="mt-1 break-all font-mono">
+                  {siteConfig.realtimeApiUrl}/api/v1/omnichannel-webhooks/linkedin/{channel.id}
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">OAuth Redirect URL</p>
+                <p className="mt-1 break-all font-mono">
+                  {siteConfig.realtimeApiUrl}/api/v1/integrations/linkedin/oauth/callback
+                </p>
+              </div>
+              <a
+                href={`${siteConfig.realtimeApiUrl}/api/v1/integrations/linkedin/install?channel_id=${channel.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex text-[12px] font-medium text-brand hover:text-brand-hover"
+              >
+                Connect LinkedIn Company Page →
+              </a>
+              <p className="text-[11px]">
+                Requires Community Management API approval. Backend env: LINKEDIN_CLIENT_ID,
+                LINKEDIN_CLIENT_SECRET, API_PUBLIC_URL
+              </p>
+            </div>
+          )}
+          {(channel.channel_type === "telegram" || channel.channel_type === "whatsapp") && (
+            <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-muted-foreground">
+              Webhook: {siteConfig.apiUrl}/api/v1/omnichannel-webhooks/{channel.channel_type}/{channel.id}
+            </div>
+          )}
         </DashboardCard>
 
         <div className="md:col-span-2">
           <h3 className="mb-4 text-[14px] font-medium text-foreground">Channel inbox</h3>
-          {loadingInbox ? (
-            <OmnichannelInboxSkeleton />
-          ) : (
-            <OmnichannelInboxList items={inbox} emptyMessage="No conversations on this channel yet." />
-          )}
+          <OmnichannelInboxPanel
+            channelId={channelId}
+            emptyMessage="No conversations on this channel yet."
+          />
         </div>
       </div>
     </div>

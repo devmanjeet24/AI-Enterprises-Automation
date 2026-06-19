@@ -3,31 +3,42 @@ import Link from "next/link";
 import { Container } from "./container";
 import { siteConfig } from "@/config/site";
 
+type FooterLink = {
+  label: string;
+  href?: string;
+  external?: boolean;
+  comingSoon?: boolean;
+};
+
 const footerLinks = {
   product: [
-    { label: "Platform", href: "#platform" },
-    { label: "Solutions", href: "#solutions" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "Resources", href: "#resources" },
+    { label: "Platform", href: "/#platform" },
+    { label: "Solutions", href: "/#solutions" },
+    { label: "Pricing", href: "/#pricing" },
+    { label: "Resources", href: "/#resources" },
   ],
   company: [
-    { label: "About", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "About", href: "/#platform" },
+    { label: "Blog", comingSoon: true },
+    { label: "Careers", comingSoon: true },
+    { label: "Contact", href: "mailto:support@lumen.ai" },
   ],
   resources: [
-    { label: "Documentation", href: "#" },
-    { label: "API Reference", href: "#" },
-    { label: "Security", href: "#" },
-    { label: "Status", href: "#" },
+    { label: "Documentation", href: "/#resources" },
+    {
+      label: "API Reference",
+      href: `${siteConfig.apiUrl}/docs`,
+      external: true,
+    },
+    { label: "Security", href: "/#platform" },
+    { label: "Status", href: "/#platform" },
   ],
   legal: [
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
-    { label: "DPA", href: "#" },
+    { label: "Privacy", comingSoon: true },
+    { label: "Terms", comingSoon: true },
+    { label: "DPA", comingSoon: true },
   ],
-} as const;
+} as const satisfies Record<string, readonly FooterLink[]>;
 
 function Footer() {
   return (
@@ -56,12 +67,10 @@ function Footer() {
           <ul className="flex flex-wrap gap-6">
             {footerLinks.legal.map((link) => (
               <li key={link.label}>
-                <Link
-                  href={link.href}
+                <FooterLinkItem
+                  link={link}
                   className="text-xs text-tertiary transition-colors hover:text-muted-foreground"
-                >
-                  {link.label}
-                </Link>
+                />
               </li>
             ))}
           </ul>
@@ -71,12 +80,47 @@ function Footer() {
   );
 }
 
+function FooterLinkItem({
+  link,
+  className,
+}: {
+  link: FooterLink;
+  className?: string;
+}) {
+  if (link.comingSoon || !link.href) {
+    return (
+      <span className={className} title="Coming soon">
+        {link.label}
+      </span>
+    );
+  }
+
+  if (link.external) {
+    return (
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+      >
+        {link.label}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={link.href} className={className}>
+      {link.label}
+    </Link>
+  );
+}
+
 function FooterColumn({
   title,
   links,
 }: {
   title: string;
-  links: ReadonlyArray<{ label: string; href: string }>;
+  links: readonly FooterLink[];
 }) {
   return (
     <div>
@@ -86,12 +130,10 @@ function FooterColumn({
       <ul className="mt-4 space-y-3">
         {links.map((link) => (
           <li key={link.label}>
-            <Link
-              href={link.href}
+            <FooterLinkItem
+              link={link}
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
+            />
           </li>
         ))}
       </ul>

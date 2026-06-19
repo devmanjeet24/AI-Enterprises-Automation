@@ -17,6 +17,7 @@ import { BrowserAutomationError } from "./browser-automation-error";
 import { BrowserProfileDetailSkeleton } from "./browser-automation-skeleton";
 import { BrowserProfileActions } from "./browser-profile-actions";
 import { BrowserProfileConfigPanel } from "./browser-profile-config-panel";
+import { BrowserProfileSessionPanel } from "./browser-profile-session-panel";
 import { BrowserProfileHeader } from "./browser-profile-header";
 import { BrowserProfileLinkedTasks } from "./browser-profile-linked-tasks";
 
@@ -97,6 +98,7 @@ export function BrowserProfileDetailPage({ profileId }: BrowserProfileDetailPage
 
       <div className="mt-8 space-y-8 px-6 md:mt-10 md:px-8">
         <BrowserProfileConfigPanel profile={profile} canWrite={canWrite} />
+        <BrowserProfileSessionPanel profile={profile} canWrite={canWrite} />
 
         <div>
           <div className="mb-4">

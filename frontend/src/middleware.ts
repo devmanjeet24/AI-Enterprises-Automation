@@ -1,28 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { AUTH_COOKIE_NAME } from "@/lib/auth/constants";
-
-const protectedPaths = [
-  "/overview",
-  "/knowledge-base",
-  "/ai-employees",
-  "/agent-teams",
-  "/workflows",
-  "/research-hub",
-  "/browser-automation",
-  "/customer-support",
-  "/voice-ai",
-  "/omnichannel",
-  "/analytics",
-  "/settings",
-];
+import { AUTH_COOKIE_NAME, PROTECTED_PATHS } from "@/lib/auth/constants";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  const isProtectedRoute = protectedPaths.some(
+  const isProtectedRoute = PROTECTED_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   const isAuthRoute = pathname === "/login" || pathname === "/register";

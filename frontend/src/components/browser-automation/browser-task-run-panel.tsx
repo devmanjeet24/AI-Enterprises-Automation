@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { useRunBrowserTask } from "@/hooks/use-browser-automation";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { formatExecutionErrorMessage, getExecutionFailedStep } from "@/lib/browser-automation/execution-helpers";
 import {
   canRunBrowserTask,
   getBrowserRunBlockedMessage,
@@ -23,14 +24,14 @@ interface BrowserTaskRunPanelProps {
   task: BrowserTaskDetail;
   canExecute?: boolean;
   canWrite?: boolean;
-  onRunSuccess?: () => void;
+  onRunComplete?: (execution: BrowserTaskExecution) => void;
 }
 
 export function BrowserTaskRunPanel({
   task,
   canExecute = true,
   canWrite = true,
-  onRunSuccess,
+  onRunComplete,
 }: BrowserTaskRunPanelProps) {
   const accent = dashboardAccents.blue;
   const toast = useToast();
@@ -48,21 +49,19 @@ export function BrowserTaskRunPanel({
     try {
       const execution = await runMutation.mutateAsync();
       setLastRunResult(execution);
+      onRunComplete?.(execution);
 
       if (execution.status === "completed") {
         toast.success("Browser task completed successfully.");
-        onRunSuccess?.();
         return;
       }
 
       if (execution.status === "failed") {
-        toast.error(execution.error_message ?? "Browser task run failed.");
-        onRunSuccess?.();
+        toast.error(formatExecutionErrorMessage(execution));
         return;
       }
 
       toast.success("Browser task run started.");
-      onRunSuccess?.();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to run browser task."));
     }
@@ -91,9 +90,13 @@ export function BrowserTaskRunPanel({
             <div>
               <p className="text-[14px] font-medium text-foreground">Run failed</p>
               <p className="mt-1 text-[13px] text-destructive">
-                {lastRunResult.error_message ??
-                  "The browser automation could not complete this run."}
+                {formatExecutionErrorMessage(lastRunResult)}
               </p>
+              {getExecutionFailedStep(lastRunResult) && (
+                <p className="mt-2 text-[12px] text-muted-foreground">
+                  Open execution details for the step timeline and failure screenshot.
+                </p>
+              )}
             </div>
           </div>
         </DashboardCard>

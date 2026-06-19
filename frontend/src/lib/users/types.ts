@@ -26,8 +26,46 @@ export interface UpdateUserInput {
   is_active?: boolean | null;
 }
 
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  role_id?: string;
+}
+
 export interface AssignRoleInput {
   role_id: string;
+}
+
+export interface InviteUserInput {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role_id?: string;
+}
+
+export interface AcceptInvitationInput {
+  token: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface UserInvitation {
+  id: string;
+  organization_id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: RoleSummary;
+  invited_by_id: string | null;
+  accepted_by_id: string | null;
+  invite_url: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserRoleAssignment {

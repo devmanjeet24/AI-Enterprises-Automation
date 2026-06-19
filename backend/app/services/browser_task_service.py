@@ -3,14 +3,28 @@
 import uuid
 
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.text import slugify
 from app.models.browser_task import BrowserTask
 from app.models.enums import BrowserTaskStatus
+from app.schemas.browser_step import parse_browser_task_config
 from app.schemas.browser_task import BrowserTaskCreateRequest, BrowserTaskUpdateRequest
 from app.services.browser_profile_service import get_browser_profile_or_404
+
+
+def _validate_task_config(config: dict | None) -> None:
+    if config is None:
+        return
+    try:
+        parse_browser_task_config(config)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.errors(),
+        ) from exc
 
 
 def _resolve_slug(name: str, slug: str | None) -> str:
@@ -100,6 +114,7 @@ def create_browser_task(
 
     slug = _resolve_slug(payload.name, payload.slug)
     _ensure_unique_slug(db, organization_id=organization_id, slug=slug)
+    _validate_task_config(payload.config)
 
     task = BrowserTask(
         organization_id=organization_id,
@@ -127,6 +142,9 @@ def update_browser_task(
     payload: BrowserTaskUpdateRequest,
 ) -> BrowserTask:
     updates = payload.model_dump(exclude_unset=True)
+
+    if "config" in updates:
+        _validate_task_config(updates["config"])
 
     if "browser_profile_id" in updates:
         profile = get_browser_profile_or_404(
