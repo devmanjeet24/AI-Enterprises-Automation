@@ -62,6 +62,8 @@ cat >"$FRONTEND_ENV" <<EOF
 NEXT_PUBLIC_APP_URL=$FRONTEND_URL
 # Same origin: Next.js rewrites /api/v1/* to the backend on port 20378
 NEXT_PUBLIC_API_URL=$FRONTEND_URL
+# SSE connects directly to the backend tunnel (long-lived streams bypass Next.js proxy)
+NEXT_PUBLIC_REALTIME_API_URL=$BACKEND_URL
 
 # Direct HTTP access (no microphone — upload only)
 # NEXT_PUBLIC_APP_URL=http://116.202.210.102:20380
@@ -84,6 +86,10 @@ else:
     text += f"\nCORS_ORIGINS={cors}\n"
 text = re.sub(r"^public_test_url=.*$", f"public_test_url=$FRONTEND_URL", text, flags=re.M)
 text = re.sub(r"^public_api_url=.*$", f"public_api_url=$BACKEND_URL", text, flags=re.M)
+if re.search(r"^API_PUBLIC_URL=.*$", text, flags=re.M):
+    text = re.sub(r"^API_PUBLIC_URL=.*$", f"API_PUBLIC_URL=$BACKEND_URL", text, flags=re.M)
+else:
+    text += f"\nAPI_PUBLIC_URL=$BACKEND_URL\n"
 path.write_text(text)
 PY
 

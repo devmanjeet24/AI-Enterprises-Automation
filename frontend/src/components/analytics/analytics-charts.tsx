@@ -27,7 +27,7 @@ export function AnalyticsBarChart({
 }: AnalyticsBarChartProps) {
   if (isLoading) return <AnalyticsChartSkeleton />;
 
-  const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+  const total = segments.reduce((sum, segment) => sum + (segment.value ?? 0), 0);
 
   return (
     <DashboardCard variant="panel" accent={accent} className="h-full" interactive={false}>
@@ -40,7 +40,7 @@ export function AnalyticsBarChart({
         ) : (
           segments.map((segment) => {
             const segmentAccent = dashboardAccents[segment.accent];
-            const width = percentOf(segment.value, total);
+            const width = percentOf(segment.value ?? 0, total);
 
             return (
               <div key={segment.key}>
@@ -51,7 +51,7 @@ export function AnalyticsBarChart({
                   </div>
                   <div className="flex shrink-0 items-center gap-2 tabular-nums">
                     <span className="text-[13px] font-medium text-foreground">
-                      {segment.value.toLocaleString("en-US")}
+                      {(segment.value ?? 0).toLocaleString("en-US")}
                     </span>
                     <span className="text-[12px] text-muted-foreground">{width}%</span>
                   </div>
@@ -59,7 +59,7 @@ export function AnalyticsBarChart({
                 <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
                   <div
                     className={cn("h-full rounded-full transition-all duration-500", segmentAccent.bar)}
-                    style={{ width: `${Math.max(width, segment.value > 0 ? 4 : 0)}%` }}
+                    style={{ width: `${Math.max(width, (segment.value ?? 0) > 0 ? 4 : 0)}%` }}
                   />
                 </div>
               </div>
@@ -80,7 +80,7 @@ export function AnalyticsDistributionChart({
   segments,
   ...props
 }: AnalyticsDistributionChartProps) {
-  const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+  const total = segments.reduce((sum, segment) => sum + (segment.value ?? 0), 0);
   const subtitle =
     props.subtitle ??
     (showTotal && total > 0 ? `${total.toLocaleString("en-US")} total` : props.subtitle);

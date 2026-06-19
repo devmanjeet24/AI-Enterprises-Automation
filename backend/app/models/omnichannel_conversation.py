@@ -103,6 +103,26 @@ class OmnichannelConversation(Base, TimestampMixin):
         nullable=True,
         index=True,
     )
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    archived_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    deleted_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     organization: Mapped["Organization"] = relationship(back_populates="omnichannel_conversations")
     channel: Mapped["OmnichannelChannel"] = relationship(back_populates="conversations")

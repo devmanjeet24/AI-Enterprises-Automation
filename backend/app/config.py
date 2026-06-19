@@ -47,6 +47,16 @@ class Settings(BaseSettings):
 
     whisper_model_name: str = "base"
 
+    slack_client_id: str = ""
+    slack_client_secret: str = ""
+    slack_signing_secret: str = ""
+    slack_bot_token: str = ""
+
+    linkedin_client_id: str = ""
+    linkedin_client_secret: str = ""
+    linkedin_api_version: str = "202601"
+    linkedin_developer_application_id: str = ""
+
     browser_session_dir: str = "browser_sessions"
     browser_screenshot_dir: str = "browser_screenshots"
 

@@ -4,9 +4,20 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections import defaultdict
 from typing import Any
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
+
+_main_event_loop: asyncio.AbstractEventLoop | None = None
+
+
+def set_omnichannel_event_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """Register the FastAPI event loop for publishes from sync worker threads."""
+    global _main_event_loop
+    _main_event_loop = loop
 
 
 class OmnichannelEventBus:
@@ -50,8 +61,22 @@ def publish_omnichannel_event_sync(
     event: str,
     data: dict[str, Any],
 ) -> None:
+    """Publish from async handlers or sync FastAPI endpoints (thread pool)."""
+    coro = omnichannel_event_bus.publish(organization_id, event, data)
     try:
         loop = asyncio.get_running_loop()
-        loop.create_task(omnichannel_event_bus.publish(organization_id, event, data))
-    except RuntimeError:
+        loop.create_task(coro)
         return
+    except RuntimeError:
+        pass
+
+    main_loop = _main_event_loop
+    if main_loop is not None and main_loop.is_running():
+        asyncio.run_coroutine_threadsafe(coro, main_loop)
+        return
+
+    logger.warning(
+        "Omnichannel event loop is not registered; dropped %s for org %s",
+        event,
+        organization_id,
+    )

@@ -67,6 +67,9 @@ class OmnichannelAnalyticsResponse(BaseModel):
     total_messages: int
     recent_conversations_7d: int
     pending_handoffs: int
+    handoffs_by_status: dict[str, int]
+    ai_handled_conversations: int
+    human_handled_conversations: int
     conversations_by_status: dict[str, int]
     conversations_by_channel_type: dict[str, int]
     messages_by_role: dict[str, int]

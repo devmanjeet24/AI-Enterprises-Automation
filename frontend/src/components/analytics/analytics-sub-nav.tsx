@@ -30,7 +30,8 @@ export function AnalyticsSubNav() {
             (section.href !== "/analytics" && pathname.startsWith(`${section.href}/`)) ||
             (section.href === "/analytics" && pathname === "/analytics");
 
-          const accent = dashboardAccents[analyticsNavAccents[section.id]];
+          const accentKey = analyticsNavAccents[section.id] ?? "neutral";
+          const accent = dashboardAccents[accentKey];
 
           if (!section.enabled) {
             return (

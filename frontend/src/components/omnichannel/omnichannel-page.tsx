@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { DashboardSectionHeader } from "@/components/dashboard/dashboard-card";
 import {
-  useInbox,
   useOmnichannelAnalytics,
   useOmnichannelChannels,
 } from "@/hooks/use-omnichannel";
@@ -13,34 +12,28 @@ import { useUserPermissions } from "@/hooks/use-auth-token";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { isAccessDeniedError } from "@/lib/omnichannel/access";
-import type {
-  OmnichannelChannelType,
-  OmnichannelConversationStatus,
-} from "@/lib/omnichannel/types";
+import type { OmnichannelChannelType } from "@/lib/omnichannel/types";
 import { cn } from "@/lib/utils";
 
 import { CreateOmnichannelChannelModal } from "./create-omnichannel-channel-modal";
 import { OmnichannelAccessDenied } from "./omnichannel-access-denied";
+import { OmnichannelAnalyticsDashboard } from "@/components/analytics/omnichannel-analytics-dashboard";
 import { OmnichannelChannelGrid } from "./omnichannel-channel-card";
 import { OmnichannelEmptyState } from "./omnichannel-empty-state";
 import { OmnichannelError } from "./omnichannel-error";
 import { OmnichannelHero } from "./omnichannel-hero";
-import { OmnichannelInboxList } from "./omnichannel-inbox-list";
+import { OmnichannelInboxPanel } from "./omnichannel-inbox-panel";
 import {
   OmnichannelChannelGridSkeleton,
-  OmnichannelInboxSkeleton,
   OmnichannelStatsSkeleton,
 } from "./omnichannel-skeleton";
 import { OmnichannelStats } from "./omnichannel-stats";
 
 type ChannelFilter = OmnichannelChannelType | "all";
-type StatusFilter = OmnichannelConversationStatus | "all";
 
 export function OmnichannelPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [unassignedOnly, setUnassignedOnly] = useState(false);
 
   const permissions = useUserPermissions();
   const canCreateChannel = hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CHANNELS_WRITE);
@@ -62,33 +55,13 @@ export function OmnichannelPage() {
     refetch: refetchAnalytics,
   } = useOmnichannelAnalytics();
 
-  const inboxParams = useMemo(
-    () => ({
-      channel_type: channelFilter === "all" ? undefined : channelFilter,
-      status: statusFilter === "all" ? undefined : statusFilter,
-      unassigned_only: unassignedOnly,
-    }),
-    [channelFilter, statusFilter, unassignedOnly],
-  );
-
-  const {
-    data: inbox = [],
-    isLoading: loadingInbox,
-    isError: inboxError,
-    error: inboxErr,
-    refetch: refetchInbox,
-  } = useInbox(inboxParams);
-
   const channelsAccessDenied = channelsError && isAccessDeniedError(channelsErr);
-  const inboxAccessDenied = inboxError && isAccessDeniedError(inboxErr);
   const canReadChannels = hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CHANNELS_READ);
   const canReadInbox = hasPermission(
     permissions,
     PERMISSIONS.OMNICHANNEL_CONVERSATIONS_READ,
   );
-  const fullAccessDenied =
-    (!canReadChannels && !canReadInbox) ||
-    (channelsAccessDenied && inboxAccessDenied);
+  const fullAccessDenied = !canReadChannels && !canReadInbox;
 
   if (fullAccessDenied) {
     return (
@@ -133,6 +106,20 @@ export function OmnichannelPage() {
         </section>
 
         <section className="px-6 md:px-8">
+          <OmnichannelAnalyticsDashboard
+            analytics={analytics}
+            isLoading={loadingAnalytics}
+            isError={analyticsError}
+            errorMessage={
+              analyticsError
+                ? getApiErrorMessage(analyticsErr, "Failed to load analytics.")
+                : null
+            }
+            onRetry={() => void refetchAnalytics()}
+          />
+        </section>
+
+        <section className="px-6 md:px-8">
           <DashboardSectionHeader title="Channels" description="Manage communication channels" />
           {loadingChannels ? (
             <OmnichannelChannelGridSkeleton />
@@ -154,19 +141,25 @@ export function OmnichannelPage() {
           )}
         </section>
 
-        <section className="px-6 md:px-8">
-          <DashboardSectionHeader
-            title="Unified inbox"
-            description={
-              loadingInbox
-                ? "Loading conversations…"
-                : `${inbox.length} conversation${inbox.length === 1 ? "" : "s"}`
-            }
-          />
+        {canReadInbox && (
+          <section className="px-6 md:px-8">
+            <DashboardSectionHeader
+              title="Unified inbox"
+              description="Manage, archive, and clean up test conversations."
+            />
 
-          <div className="mb-4 flex flex-wrap gap-2">
-            {(["all", "website_chat", "telegram", "slack", "internal"] as ChannelFilter[]).map(
-              (value) => (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {(
+                [
+                  "all",
+                  "website_chat",
+                  "telegram",
+                  "slack",
+                  "email",
+                  "whatsapp",
+                  "internal",
+                ] as ChannelFilter[]
+              ).map((value) => (
                 <button
                   key={value}
                   type="button"
@@ -180,47 +173,14 @@ export function OmnichannelPage() {
                 >
                   {value === "all" ? "All channels" : value.replace("_", " ")}
                 </button>
-              ),
-            )}
-          </div>
+              ))}
+            </div>
 
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px]"
-            >
-              <option value="all">All statuses</option>
-              <option value="open">Open</option>
-              <option value="ai_handling">AI Handling</option>
-              <option value="waiting_human">Waiting Human</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
-            <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={unassignedOnly}
-                onChange={(e) => setUnassignedOnly(e.target.checked)}
-              />
-              Unassigned only
-            </label>
-          </div>
-
-          {loadingInbox ? (
-            <OmnichannelInboxSkeleton />
-          ) : inboxAccessDenied ? (
-            <OmnichannelAccessDenied />
-          ) : inboxError ? (
-            <OmnichannelError
-              title="Failed to load inbox"
-              message={getApiErrorMessage(inboxErr, "Could not load inbox.")}
-              onRetry={() => void refetchInbox()}
+            <OmnichannelInboxPanel
+              channelTypeFilter={channelFilter === "all" ? undefined : channelFilter}
             />
-          ) : (
-            <OmnichannelInboxList items={inbox} />
-          )}
-        </section>
+          </section>
+        )}
       </div>
 
       {canCreateChannel && (

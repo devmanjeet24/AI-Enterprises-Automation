@@ -11,8 +11,11 @@ import {
   updateOmnichannelChannel,
 } from "@/lib/api/omnichannel-channels";
 import {
+  bulkArchiveOmnichannelConversations,
+  bulkDeleteOmnichannelConversations,
   createConversationMessage,
   createOmnichannelConversation,
+  deleteOmnichannelConversation,
   getOmnichannelConversation,
   listConversationMessages,
   listInbox,
@@ -172,6 +175,43 @@ export function useUpdateOmnichannelConversation(conversationId: string) {
         queryKey: omnichannelKeys.conversationDetail(conversationId),
       });
       void queryClient.invalidateQueries({ queryKey: omnichannelKeys.inbox() });
+      void queryClient.invalidateQueries({ queryKey: omnichannelKeys.analytics() });
+    },
+  });
+}
+
+export function useDeleteOmnichannelConversation() {
+  const token = useAuthToken();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      deleteOmnichannelConversation(token!, conversationId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: omnichannelKeys.all });
+    },
+  });
+}
+
+export function useBulkArchiveOmnichannelConversations() {
+  const token = useAuthToken();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationIds: string[]) =>
+      bulkArchiveOmnichannelConversations(token!, conversationIds),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: omnichannelKeys.all });
+    },
+  });
+}
+
+export function useBulkDeleteOmnichannelConversations() {
+  const token = useAuthToken();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationIds: string[]) =>
+      bulkDeleteOmnichannelConversations(token!, conversationIds),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: omnichannelKeys.all });
     },
   });
 }

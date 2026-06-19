@@ -5,7 +5,11 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models.enums import OmnichannelChannelType, OmnichannelConversationStatus
+from app.models.enums import (
+    OmnichannelChannelType,
+    OmnichannelConversationStatus,
+    OmnichannelInboxView,
+)
 from app.models.omnichannel_channel import OmnichannelChannel
 from app.models.omnichannel_conversation import OmnichannelConversation
 from app.models.omnichannel_message import OmnichannelMessage
@@ -20,11 +24,18 @@ def list_unified_inbox(
     channel_type: OmnichannelChannelType | None = None,
     status: OmnichannelConversationStatus | None = None,
     unassigned_only: bool = False,
+    inbox_view: OmnichannelInboxView = OmnichannelInboxView.ACTIVE,
 ) -> list[OmnichannelInboxItemResponse]:
     """Return conversations for the unified inbox, newest activity first."""
     query = select(OmnichannelConversation).where(
         OmnichannelConversation.organization_id == organization_id,
+        OmnichannelConversation.deleted_at.is_(None),
     )
+
+    if inbox_view == OmnichannelInboxView.ACTIVE:
+        query = query.where(OmnichannelConversation.archived_at.is_(None))
+    elif inbox_view == OmnichannelInboxView.ARCHIVED:
+        query = query.where(OmnichannelConversation.archived_at.is_not(None))
 
     if channel_id is not None:
         query = query.where(OmnichannelConversation.channel_id == channel_id)
@@ -102,6 +113,8 @@ def list_unified_inbox(
             handoff_status=conversation.handoff_status,
             shared_context=conversation.shared_context,
             last_message_at=conversation.last_message_at,
+            archived_at=conversation.archived_at,
+            deleted_at=conversation.deleted_at,
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
             channel_name=channels.get(conversation.channel_id).name

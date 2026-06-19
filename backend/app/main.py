@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,12 +9,14 @@ from app.api.router import api_router
 from app.config import get_settings
 from app.core.exception_handlers import register_exception_handlers
 from app.db.session import engine
+from app.services.omnichannel_event_bus import set_omnichannel_event_loop
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    set_omnichannel_event_loop(asyncio.get_running_loop())
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
     yield

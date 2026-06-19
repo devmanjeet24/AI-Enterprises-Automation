@@ -9,13 +9,15 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.models.enums import OmnichannelMessageRole
-from app.schemas.omnichannel_conversation import OmnichannelMessageResponse
 from app.services.omnichannel_widget_service import (
     add_widget_message,
     get_channel_by_public_key,
     get_widget_config,
+    get_widget_conversation,
     list_widget_messages,
+    request_widget_handoff,
     start_widget_conversation,
+    update_widget_visitor_contact,
 )
 
 router = APIRouter(prefix="/omnichannel-widget", tags=["omnichannel-widget"])
@@ -25,7 +27,12 @@ class WidgetStartConversationRequest(BaseModel):
     visitor_name: str | None = Field(default=None, max_length=200)
     visitor_email: str | None = Field(default=None, max_length=255)
     visitor_id: str | None = Field(default=None, max_length=255)
-    initial_message: str = Field(min_length=1, max_length=4000)
+    initial_message: str | None = Field(default=None, max_length=4000)
+
+
+class WidgetUpdateContactRequest(BaseModel):
+    visitor_name: str | None = Field(default=None, max_length=200)
+    visitor_email: str | None = Field(default=None, max_length=255)
 
 
 class WidgetMessageRequest(BaseModel):
@@ -36,6 +43,7 @@ class WidgetConversationResponse(BaseModel):
     id: uuid.UUID
     subject: str
     status: str
+    handoff_status: str
 
 
 class WidgetMessageItem(BaseModel):
@@ -77,6 +85,75 @@ def start_widget_conversation_endpoint(
         id=conversation.id,
         subject=conversation.subject,
         status=conversation.status.value,
+        handoff_status=conversation.handoff_status.value,
+    )
+
+
+@router.get(
+    "/{public_key}/conversations/{conversation_id}",
+    response_model=WidgetConversationResponse,
+)
+def get_widget_conversation_endpoint(
+    public_key: str,
+    conversation_id: uuid.UUID,
+    db: Annotated[Session, Depends(get_db)],
+) -> WidgetConversationResponse:
+    channel = get_channel_by_public_key(db, public_key=public_key)
+    conversation = get_widget_conversation(db, channel=channel, conversation_id=conversation_id)
+    return WidgetConversationResponse(
+        id=conversation.id,
+        subject=conversation.subject,
+        status=conversation.status.value,
+        handoff_status=conversation.handoff_status.value,
+    )
+
+
+@router.patch(
+    "/{public_key}/conversations/{conversation_id}",
+    response_model=WidgetConversationResponse,
+)
+def update_widget_contact_endpoint(
+    public_key: str,
+    conversation_id: uuid.UUID,
+    payload: WidgetUpdateContactRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> WidgetConversationResponse:
+    channel = get_channel_by_public_key(db, public_key=public_key)
+    conversation = update_widget_visitor_contact(
+        db,
+        channel=channel,
+        conversation_id=conversation_id,
+        visitor_name=payload.visitor_name,
+        visitor_email=payload.visitor_email,
+    )
+    return WidgetConversationResponse(
+        id=conversation.id,
+        subject=conversation.subject,
+        status=conversation.status.value,
+        handoff_status=conversation.handoff_status.value,
+    )
+
+
+@router.post(
+    "/{public_key}/conversations/{conversation_id}/handoff",
+    response_model=WidgetConversationResponse,
+)
+def request_widget_handoff_endpoint(
+    public_key: str,
+    conversation_id: uuid.UUID,
+    db: Annotated[Session, Depends(get_db)],
+) -> WidgetConversationResponse:
+    channel = get_channel_by_public_key(db, public_key=public_key)
+    conversation = request_widget_handoff(
+        db,
+        channel=channel,
+        conversation_id=conversation_id,
+    )
+    return WidgetConversationResponse(
+        id=conversation.id,
+        subject=conversation.subject,
+        status=conversation.status.value,
+        handoff_status=conversation.handoff_status.value,
     )
 
 

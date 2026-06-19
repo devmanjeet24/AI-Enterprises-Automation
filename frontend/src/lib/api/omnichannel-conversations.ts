@@ -4,6 +4,7 @@ import type {
   CreateOmnichannelMessageInput,
   ListInboxParams,
   OmnichannelAiSuggestion,
+  OmnichannelBulkActionResult,
   OmnichannelConversation,
   OmnichannelConversationDetail,
   OmnichannelInboxItem,
@@ -22,6 +23,7 @@ export function listInbox(
   if (params?.channel_type) searchParams.set("channel_type", params.channel_type);
   if (params?.status) searchParams.set("status", params.status);
   if (params?.unassigned_only) searchParams.set("unassigned_only", "true");
+  if (params?.inbox_view) searchParams.set("inbox_view", params.inbox_view);
   const query = searchParams.toString();
   return apiClient<OmnichannelInboxItem[]>(
     `${BASE}/inbox${query ? `?${query}` : ""}`,
@@ -69,6 +71,28 @@ export function deleteOmnichannelConversation(
   return apiClient<void>(`${BASE}/${conversationId}`, {
     method: "DELETE",
     token,
+  });
+}
+
+export function bulkArchiveOmnichannelConversations(
+  token: string,
+  conversationIds: string[],
+): Promise<OmnichannelBulkActionResult> {
+  return apiClient<OmnichannelBulkActionResult>(`${BASE}/bulk/archive`, {
+    method: "POST",
+    token,
+    body: { conversation_ids: conversationIds },
+  });
+}
+
+export function bulkDeleteOmnichannelConversations(
+  token: string,
+  conversationIds: string[],
+): Promise<OmnichannelBulkActionResult> {
+  return apiClient<OmnichannelBulkActionResult>(`${BASE}/bulk/delete`, {
+    method: "POST",
+    token,
+    body: { conversation_ids: conversationIds },
   });
 }
 

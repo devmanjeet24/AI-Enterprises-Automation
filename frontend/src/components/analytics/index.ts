@@ -16,6 +16,8 @@ export {
   AnalyticsResearchPage,
   AnalyticsWorkflowsPage,
 } from "./analytics-pages";
+export { AnalyticsOmnichannelPage } from "./analytics-omnichannel-page";
+export { OmnichannelAnalyticsDashboard } from "./omnichannel-analytics-dashboard";
 export {
   AnalyticsChartSkeleton,
   AnalyticsHeroSkeleton,

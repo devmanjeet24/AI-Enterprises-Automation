@@ -91,6 +91,20 @@ export function canSendVoiceMessages(
   );
 }
 
+/** Delete an omnichannel conversation — delete permission or admin/manager. */
+export function canDeleteOmnichannelConversations(
+  permissions: string[] | undefined,
+  roles?: ReadonlyArray<{ slug: string }>,
+): boolean {
+  if (hasPermission(permissions, PERMISSIONS.OMNICHANNEL_CONVERSATIONS_DELETE)) {
+    return true;
+  }
+
+  return (
+    roles?.some((role) => role.slug === "admin" || role.slug === "manager") ?? false
+  );
+}
+
 /** Delete a voice conversation — delete permission or admin/manager. */
 export function canDeleteVoiceSessions(
   permissions: string[] | undefined,

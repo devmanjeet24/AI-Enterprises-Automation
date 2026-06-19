@@ -4,7 +4,10 @@ export type OmnichannelChannelType =
   | "slack"
   | "email"
   | "whatsapp"
+  | "linkedin"
   | "internal";
+
+export type OmnichannelInboxView = "active" | "archived";
 
 export type OmnichannelConversationStatus =
   | "open"
@@ -63,6 +66,8 @@ export interface OmnichannelConversation {
   last_message_at: string | null;
   support_ticket_id: string | null;
   resolved_at: string | null;
+  archived_at: string | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -109,6 +114,9 @@ export interface OmnichannelAnalytics {
   total_messages: number;
   recent_conversations_7d: number;
   pending_handoffs: number;
+  handoffs_by_status: Record<string, number>;
+  ai_handled_conversations: number;
+  human_handled_conversations: number;
   conversations_by_status: Record<string, number>;
   conversations_by_channel_type: Record<string, number>;
   messages_by_role: Record<string, number>;
@@ -161,12 +169,12 @@ export interface UpdateOmnichannelConversationInput {
   assigned_user_id?: string | null;
   assigned_ai_employee_id?: string | null;
   shared_context?: Record<string, unknown> | null;
+  is_archived?: boolean;
 }
 
-export interface CreateOmnichannelMessageInput {
-  content: string;
-  role?: OmnichannelMessageRole;
-  is_internal?: boolean;
+export interface OmnichannelBulkActionResult {
+  affected_count: number;
+  conversation_ids: string[];
 }
 
 export interface ListInboxParams {
@@ -174,4 +182,11 @@ export interface ListInboxParams {
   channel_type?: OmnichannelChannelType;
   status?: OmnichannelConversationStatus;
   unassigned_only?: boolean;
+  inbox_view?: OmnichannelInboxView;
+}
+
+export interface CreateOmnichannelMessageInput {
+  content: string;
+  role?: OmnichannelMessageRole;
+  is_internal?: boolean;
 }

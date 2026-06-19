@@ -41,6 +41,16 @@ class OmnichannelConversationUpdateRequest(BaseModel):
     assigned_user_id: uuid.UUID | None = None
     assigned_ai_employee_id: uuid.UUID | None = None
     shared_context: dict[str, Any] | None = None
+    is_archived: bool | None = None
+
+
+class OmnichannelBulkConversationRequest(BaseModel):
+    conversation_ids: list[uuid.UUID] = Field(min_length=1, max_length=100)
+
+
+class OmnichannelBulkActionResponse(BaseModel):
+    affected_count: int
+    conversation_ids: list[uuid.UUID]
 
 
 class OmnichannelMessageCreateRequest(BaseModel):
@@ -87,6 +97,8 @@ class OmnichannelConversationResponse(BaseModel):
     last_message_at: datetime | None
     support_ticket_id: uuid.UUID | None = None
     resolved_at: datetime | None = None
+    archived_at: datetime | None = None
+    deleted_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

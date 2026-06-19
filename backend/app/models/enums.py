@@ -142,6 +142,7 @@ class OmnichannelChannelType(str, enum.Enum):
     SLACK = "slack"
     EMAIL = "email"
     WHATSAPP = "whatsapp"
+    LINKEDIN = "linkedin"
     INTERNAL = "internal"
 
 
@@ -158,6 +159,16 @@ class OmnichannelAuditAction(str, enum.Enum):
     CHANNEL_UPDATED = "channel_updated"
     WIDGET_MESSAGE = "widget_message"
     WEBHOOK_RECEIVED = "webhook_received"
+    CONVERSATION_ARCHIVED = "conversation_archived"
+    CONVERSATION_UNARCHIVED = "conversation_unarchived"
+    CONVERSATION_DELETED = "conversation_deleted"
+
+
+class OmnichannelInboxView(str, enum.Enum):
+    """Inbox visibility filter for omnichannel conversations."""
+
+    ACTIVE = "active"
+    ARCHIVED = "archived"
 
 
 class OmnichannelConversationStatus(str, enum.Enum):

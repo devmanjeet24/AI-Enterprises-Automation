@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omnichannel Widget Test</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #0a0f1a;
+        color: #e8ecf4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      main {
+        max-width: 520px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 32px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        font-weight: 600;
+      }
+      p {
+        margin: 0 0 12px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #9aa4b8;
+      }
+      ol {
+        margin: 0 0 20px;
+        padding-left: 20px;
+        color: #c5cdd9;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      code {
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 2px 6px;
+        border-radius: 4px;
+        word-break: break-all;
+      }
+      .hint {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 12px;
+        color: #6b7689;
+      }
+      .error {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+        background: rgba(251, 191, 36, 0.08);
+        color: #fcd34d;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Website Chat — Widget Test</h1>
+      <div id="setup-error" class="error hidden">
+        Missing channel key. Open this page from
+        <strong>Omnichannel → your Website Chat channel → Open test page</strong>,
+        or add <code>?key=YOUR_PUBLIC_KEY</code> to the URL.
+      </div>
+      <div id="setup-ok" class="hidden">
+        <p>
+          Use the chat button in the bottom-right corner. This page loads the same
+          embed script as your channel detail screen.
+        </p>
+        <ol>
+          <li>Click the purple chat button.</li>
+          <li>Enter your name and email, then click <strong>Start chat</strong>.</li>
+          <li>Read the greeting and send a message (e.g. <em>Hello, I need help</em>).</li>
+          <li>Wait up to 30 seconds for the AI reply (widget refreshes every 4s).</li>
+          <li>Click <strong>Talk to Human</strong> to request a live agent.</li>
+          <li>Check <strong>Omnichannel → Unified inbox</strong> for name, email, and handoff status.</li>
+        </ol>
+        <p>Channel key: <code id="channel-key-label"></code></p>
+      </div>
+      <p class="hint">
+        Each organization and channel has its own public key. Copy it from the channel
+        detail page in the admin app, or use the <strong>Open test page</strong> link there.
+      </p>
+    </main>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var channelKey = params.get("key");
+        var errorEl = document.getElementById("setup-error");
+        var okEl = document.getElementById("setup-ok");
+        var label = document.getElementById("channel-key-label");
+
+        if (!channelKey) {
+          if (errorEl) errorEl.classList.remove("hidden");
+          return;
+        }
+
+        if (okEl) okEl.classList.remove("hidden");
+        if (label) label.textContent = channelKey;
+
+        // API URL must point at the backend (not the Next.js frontend origin).
+        var apiUrl =
+          params.get("api") ||
+          (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+            ? "http://localhost:8000"
+            : window.location.origin);
+
+        var script = document.createElement("script");
+        script.src = "/widget/omnichannel-chat.js";
+        script.setAttribute("data-channel-key", channelKey);
+        script.setAttribute("data-api-url", apiUrl);
+        script.async = true;
+        document.body.appendChild(script);
+      })();
+    </script>
+  </body>
+</html>

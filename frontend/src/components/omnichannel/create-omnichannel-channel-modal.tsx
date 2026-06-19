@@ -19,6 +19,7 @@ const channelTypes: { value: OmnichannelChannelType; label: string }[] = [
   { value: "slack", label: "Slack" },
   { value: "email", label: "Email" },
   { value: "whatsapp", label: "WhatsApp" },
+  { value: "linkedin", label: "LinkedIn" },
   { value: "internal", label: "Internal Messaging" },
 ];
 
@@ -38,7 +39,6 @@ export function CreateOmnichannelChannelModal({
   const [channelType, setChannelType] = useState<OmnichannelChannelType>("website_chat");
   const [aiEmployeeId, setAiEmployeeId] = useState("");
   const [botToken, setBotToken] = useState("");
-  const [slackWebhook, setSlackWebhook] = useState("");
   const [smtpHost, setSmtpHost] = useState("");
   const [smtpUser, setSmtpUser] = useState("");
   const [smtpPassword, setSmtpPassword] = useState("");
@@ -53,7 +53,6 @@ export function CreateOmnichannelChannelModal({
     setChannelType("website_chat");
     setAiEmployeeId("");
     setBotToken("");
-    setSlackWebhook("");
     setSmtpHost("");
     setSmtpUser("");
     setSmtpPassword("");
@@ -80,7 +79,6 @@ export function CreateOmnichannelChannelModal({
 
   const buildConfig = () => {
     if (channelType === "telegram" && botToken) return { bot_token: botToken };
-    if (channelType === "slack" && slackWebhook) return { incoming_webhook_url: slackWebhook };
     if (channelType === "email") {
       return {
         provider: "smtp",
@@ -176,9 +174,18 @@ export function CreateOmnichannelChannelModal({
             </div>
           )}
           {channelType === "slack" && (
-            <div>
-              <Label htmlFor="slack-webhook">Incoming webhook URL</Label>
-              <Input id="slack-webhook" value={slackWebhook} onChange={(e) => setSlackWebhook(e.target.value)} className="mt-1.5" />
+            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-[12px] text-muted-foreground">
+              Slack credentials are configured in backend environment variables
+              (SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, SLACK_SIGNING_SECRET, SLACK_BOT_TOKEN).
+              After creating this channel, open its detail page for Event Subscriptions and OAuth setup.
+            </div>
+          )}
+          {channelType === "linkedin" && (
+            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-[12px] text-muted-foreground">
+              LinkedIn credentials are configured in backend environment variables
+              (LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, API_PUBLIC_URL).
+              Requires Community Management API approval. After creating this channel, open its
+              detail page to connect your Company Page via OAuth.
             </div>
           )}
           {channelType === "email" && (

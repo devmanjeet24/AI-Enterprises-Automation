@@ -15,6 +15,8 @@ from app.models.enums import OmnichannelChannelType
 from app.models.omnichannel_channel import OmnichannelChannel
 from app.models.omnichannel_conversation import OmnichannelConversation
 from app.models.omnichannel_message import OmnichannelMessage
+from app.services.slack_service import post_chat_message, resolve_slack_bot_token
+from app.services.linkedin_service import create_comment, resolve_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +56,16 @@ def deliver_outbound_message(
         return _deliver_telegram(config, conversation, content)
 
     if channel.channel_type == OmnichannelChannelType.SLACK:
-        return _deliver_slack(config, content)
+        return _deliver_slack(config, conversation, content)
 
     if channel.channel_type == OmnichannelChannelType.EMAIL:
         return _deliver_email(config, conversation, content)
 
     if channel.channel_type == OmnichannelChannelType.WHATSAPP:
         return _deliver_whatsapp(config, conversation, content)
+
+    if channel.channel_type == OmnichannelChannelType.LINKEDIN:
+        return _deliver_linkedin(config, conversation, content)
 
     return True
 
@@ -79,12 +84,30 @@ def _deliver_telegram(
     return _post_json(url, {"chat_id": chat_id, "text": content})
 
 
-def _deliver_slack(config: dict[str, Any], content: str) -> bool:
-    webhook_url = config.get("incoming_webhook_url")
-    if not webhook_url:
-        logger.info("Slack connector skipped: missing incoming_webhook_url")
+def _deliver_slack(
+    config: dict[str, Any],
+    conversation: OmnichannelConversation,
+    content: str,
+) -> bool:
+    bot_token = resolve_slack_bot_token() or config.get("bot_token", "")
+    shared_context = conversation.shared_context or {}
+    slack_channel_id = shared_context.get("slack_channel_id")
+    thread_ts = shared_context.get("slack_thread_ts")
+
+    if not bot_token:
+        logger.info("Slack connector skipped: missing SLACK_BOT_TOKEN")
         return False
-    return _post_json(webhook_url, {"text": content})
+    if not slack_channel_id:
+        logger.info("Slack connector skipped: missing slack_channel_id on conversation")
+        return False
+
+    result = post_chat_message(
+        bot_token=bot_token,
+        channel=str(slack_channel_id),
+        text=content,
+        thread_ts=str(thread_ts) if thread_ts else None,
+    )
+    return bool(result.get("ok"))
 
 
 def _deliver_email(
@@ -163,3 +186,45 @@ def _deliver_whatsapp(
         },
         headers={"Authorization": f"Bearer {access_token}"},
     )
+
+
+def _deliver_linkedin(
+    config: dict[str, Any],
+    conversation: OmnichannelConversation,
+    content: str,
+) -> bool:
+    access_token = resolve_access_token(config)
+    organization_urn = config.get("linkedin_organization_urn")
+    shared_context = conversation.shared_context or {}
+    source_post_urn = shared_context.get("linkedin_source_post_urn")
+    reply_target_urn = shared_context.get("linkedin_reply_target_urn") or shared_context.get(
+        "linkedin_parent_comment_urn"
+    )
+    parent_comment_urn = shared_context.get("linkedin_parent_comment_urn")
+
+    if not access_token:
+        logger.info("LinkedIn connector skipped: missing oauth_access_token")
+        return False
+    if not organization_urn:
+        logger.info("LinkedIn connector skipped: missing linkedin_organization_urn")
+        return False
+    if not source_post_urn:
+        logger.info("LinkedIn connector skipped: missing linkedin_source_post_urn on conversation")
+        return False
+    if not reply_target_urn:
+        logger.info("LinkedIn connector skipped: missing linkedin_reply_target_urn on conversation")
+        return False
+
+    target_urn = str(reply_target_urn)
+    result = create_comment(
+        access_token=access_token,
+        target_urn=target_urn,
+        actor_urn=str(organization_urn),
+        object_urn=str(source_post_urn),
+        text=content,
+        parent_comment_urn=str(parent_comment_urn) if parent_comment_urn else None,
+    )
+    if result.get("ok") is False or result.get("status", 200) >= 400:
+        logger.warning("LinkedIn comment delivery failed: %s", result.get("message", result))
+        return False
+    return True

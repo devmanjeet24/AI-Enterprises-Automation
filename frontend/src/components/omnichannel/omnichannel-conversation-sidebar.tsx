@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
@@ -45,6 +45,19 @@ export function OmnichannelConversationSidebar({
   const [assignedEmployeeId, setAssignedEmployeeId] = useState(
     conversation.assigned_ai_employee_id ?? "",
   );
+
+  useEffect(() => {
+    setStatus(conversation.status);
+    setHandoffStatus(conversation.handoff_status);
+    setAssignedUserId(conversation.assigned_user_id ?? "");
+    setAssignedEmployeeId(conversation.assigned_ai_employee_id ?? "");
+  }, [
+    conversation.id,
+    conversation.status,
+    conversation.handoff_status,
+    conversation.assigned_user_id,
+    conversation.assigned_ai_employee_id,
+  ]);
 
   const canSelectResolved = conversation.has_resolution || conversation.status === "resolved";
 
@@ -168,6 +181,20 @@ export function OmnichannelConversationSidebar({
           <dt className="text-muted-foreground">Contact</dt>
           <dd className="mt-0.5">{conversation.external_contact_name ?? "—"}</dd>
         </div>
+        {typeof conversation.shared_context?.email === "string" &&
+          conversation.shared_context.email && (
+            <div>
+              <dt className="text-muted-foreground">Email</dt>
+              <dd className="mt-0.5">
+                <a
+                  href={`mailto:${conversation.shared_context.email}`}
+                  className="text-brand hover:underline"
+                >
+                  {conversation.shared_context.email}
+                </a>
+              </dd>
+            </div>
+          )}
         <div>
           <dt className="text-muted-foreground">Last activity</dt>
           <dd className="mt-0.5">{formatDateTime(conversation.last_message_at)}</dd>

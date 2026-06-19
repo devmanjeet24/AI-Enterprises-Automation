@@ -22,6 +22,8 @@ from app.api.v1.endpoints import (
     permissions,
     research_projects,
     roles,
+    slack_integration,
+    linkedin_integration,
     support_categories,
     support_tickets,
     teams,
@@ -54,6 +56,8 @@ api_router.include_router(omnichannel_conversations.router)
 api_router.include_router(omnichannel_realtime.router)
 api_router.include_router(omnichannel_widget.router)
 api_router.include_router(omnichannel_webhooks.router)
+api_router.include_router(slack_integration.router)
+api_router.include_router(linkedin_integration.router)
 api_router.include_router(conversations.router)
 api_router.include_router(departments.router)
 api_router.include_router(teams.router)
